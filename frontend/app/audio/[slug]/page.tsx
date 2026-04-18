@@ -3,8 +3,16 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { RoomContext } from "@livekit/components-react";
+import { Room, RoomEvent } from "livekit-client";
+import { useCallback, useEffect, useState } from "react";
+import type { ConnectionDetails } from "@/types";
+import { Assistant } from "@/components/player/Assistant";
+import { onDeviceFailure } from "@/components/player/utils";
+import { useRouter } from "next/navigation";
+import { RiArrowRightLine } from "@remixicon/react";
+import { setupDisconnectButton } from "@livekit/components-core";
 
 const audioScenarios = {
   "medical-officer": {
@@ -77,6 +85,27 @@ export default function AudioScenarioPage() {
 
   const scenario =
     slug && isAudioScenarioSlug(slug) ? audioScenarios[slug] : null;
+  const [room] = useState(new Room());
+  const { disconnect } = setupDisconnectButton(room);
+  const router = useRouter();
+  const onConnectButtonClicked = useCallback(async () => {
+    const response = await fetch(`/api/token?room=audio&type=${scenario}`);
+    const connectionDetailsData: ConnectionDetails = await response.json();
+
+    await room.connect(
+      connectionDetailsData.serverUrl,
+      connectionDetailsData.participantToken,
+    );
+    await room.localParticipant.setMicrophoneEnabled(true);
+  }, [room]);
+
+  useEffect(() => {
+    room.on(RoomEvent.MediaDevicesError, onDeviceFailure);
+
+    return () => {
+      room.off(RoomEvent.MediaDevicesError, onDeviceFailure);
+    };
+  }, [room]);
 
   if (!scenario) {
     return (
@@ -102,59 +131,30 @@ export default function AudioScenarioPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background">
-      <div className="mx-auto flex w-full max-w-4xl flex-col gap-8 px-6 py-10 md:px-10">
-        <div className="space-y-4">
-          <Button asChild variant="ghost" className="pl-0">
-            <Link href="/">
-              <ArrowLeft className="size-4" />
-              Back
-            </Link>
-          </Button>
-
-          <div className="space-y-2">
-            <p className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
-              Audio
-            </p>
-            <h1 className="text-4xl font-semibold tracking-tight">
-              {scenario.title}
-            </h1>
-            <p className="max-w-2xl text-base leading-7 text-muted-foreground">
-              {scenario.description}
-            </p>
-          </div>
-        </div>
-
-        <Card className="border-border/70">
-          <CardHeader>
-            <CardTitle>Scenario Overview</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm leading-6 text-muted-foreground">
-              This page is the dedicated route for the{" "}
-              <strong>{scenario.title}</strong> audio scenario. You can use it
-              as the starting point for wiring in custom flows, voice
-              assistants, or scenario-specific UI.
-            </p>
-
-            <div>
-              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-foreground">
-                Key Capabilities
-              </h2>
-              <ul className="space-y-3">
-                {scenario.highlights.map((highlight) => (
-                  <li
-                    key={highlight}
-                    className="rounded-lg border border-border/70 bg-muted/30 px-4 py-3 text-sm text-muted-foreground"
-                  >
-                    {highlight}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </CardContent>
-        </Card>
+    <main
+      data-lk-theme="default"
+      className="h-full grid content-center bg-(--lk-bg)"
+    >
+      <div className="w-full h-full flex items-center justify-center gap-4 z–10">
+        <Button
+          variant="ghost"
+          className="text-white border-0 underline text-xs cursor-pointer"
+          onClick={() => {
+            disconnect(true);
+            router.push("/personal");
+          }}
+        >
+          Personal Assistant <RiArrowRightLine size={24} />
+        </Button>
       </div>
+      <RoomContext.Provider value={room}>
+        <div className="lk-room-container max-w-5xl w-[90vw] mx-auto max-h-[90vh]">
+          <Assistant
+            room={room}
+            onConnectButtonClicked={onConnectButtonClicked}
+          />
+        </div>
+      </RoomContext.Provider>
     </main>
   );
 }

@@ -3,9 +3,16 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { useParams } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { RoomContext } from "@livekit/components-react";
+import { Room, RoomEvent } from "livekit-client";
+import { useCallback, useEffect, useState } from "react";
+import type { ConnectionDetails } from "@/types";
+import { onDeviceFailure } from "@/components/player/utils";
+import { Assistant } from "@/components/player/Assistant";
+import { RiArrowRightLine } from "@remixicon/react";
+import { useRouter } from "next/navigation";
+import { setupDisconnectButton } from "@livekit/components-core";
 
 const avatarScenarios = {
   "medical-officer": {
@@ -42,56 +49,58 @@ const avatarScenarios = {
 
 export default function AvatarScenarioPage() {
   const params = useParams<{ slug: string }>();
-
+  const [room] = useState(new Room());
+  const { disconnect } = setupDisconnectButton(room);
+  const router = useRouter();
   const scenario = useMemo(() => {
     const slug = params?.slug;
     if (!slug) return null;
     return avatarScenarios[slug as keyof typeof avatarScenarios] ?? null;
   }, [params]);
+  const onConnectButtonClicked = useCallback(async () => {
+    const response = await fetch(`/api/token?room=video&type=${scenario}`);
+    const connectionDetailsData: ConnectionDetails = await response.json();
+
+    await room.connect(
+      connectionDetailsData.serverUrl,
+      connectionDetailsData.participantToken,
+    );
+    await room.localParticipant.setMicrophoneEnabled(true);
+  }, [room]);
+
+  useEffect(() => {
+    room.on(RoomEvent.MediaDevicesError, onDeviceFailure);
+
+    return () => {
+      room.off(RoomEvent.MediaDevicesError, onDeviceFailure);
+    };
+  }, [room]);
 
   return (
-    <main className="min-h-screen bg-background">
-      <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-6 py-8 md:px-10">
-        <div>
-          <Button asChild variant="ghost" className="mb-4 pl-0">
-            <Link href="/" className="p-0">
-              <ArrowLeft className="size-4" />
-              Back
-            </Link>
+    <main
+      data-lk-theme="default"
+      className="h-full grid content-center bg-(--lk-bg)"
+    >
+      <RoomContext.Provider value={room}>
+        <div className="w-full h-full flex items-center justify-center gap-4 z–10">
+          <Button
+            variant="ghost"
+            className="text-white border-0 underline text-xs cursor-pointer"
+            onClick={() => {
+              disconnect(true);
+              router.push("/audio");
+            }}
+          >
+            DataSaver Mode <RiArrowRightLine size={24} />
           </Button>
-
-          <h1 className="text-3xl font-semibold tracking-tight">
-            {scenario?.title ?? "Avatar Scenario"}
-          </h1>
         </div>
-
-        <Card className="border-border/70">
-          <CardHeader>
-            <CardTitle>Overview</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="leading-7 text-muted-foreground">
-              {scenario?.description ??
-                "This avatar scenario page is ready for future implementation details, demos, and integrations."}
-            </p>
-
-            <div className="space-y-3">
-              <h2 className="text-lg font-medium">Key capabilities</h2>
-              <ul className="list-disc space-y-2 pl-5 text-sm leading-6 text-muted-foreground">
-                {(
-                  scenario?.highlights ?? [
-                    "Present scenario-specific details",
-                    "Add avatar experience components",
-                    "Extend this page with live interactions",
-                  ]
-                ).map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+        <div className="relative lk-room-container w-full h-full p-4">
+          <Assistant
+            room={room}
+            onConnectButtonClicked={onConnectButtonClicked}
+          />
+        </div>
+      </RoomContext.Provider>
     </main>
   );
 }
