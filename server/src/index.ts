@@ -25,7 +25,7 @@ export default defineAgent({
   },
   entry: async (ctx: JobContext) => {
     const session = new voice.AgentSession({
-      llm: new google.realtime.RealtimeModel({ voice: "Puck" }),
+      llm: new google.beta.realtime.RealtimeModel({ voice: "Puck" }),
       turnHandling: {
         turnDetection: new livekit.turnDetector.MultilingualModel(),
         interruption: {
