@@ -4,10 +4,10 @@ from typing import Optional
 
 from dotenv import load_dotenv
 from livekit.agents import (
-    NOT_GIVEN,
     AgentFalseInterruptionEvent,
     JobContext,
     JobProcess,
+    NOT_GIVEN,
     RoomInputOptions,
     WorkerOptions,
     cli,
@@ -15,7 +15,7 @@ from livekit.agents import (
 from livekit.agents.voice import AgentSession
 from livekit.plugins import bey, google, noise_cancellation, silero
 
-from agents import getAgent
+from agents import getAgent, resolveRoomMetadata
 
 load_dotenv()
 
@@ -38,6 +38,7 @@ async def entrypoint(ctx: JobContext):
     ctx.log_context_fields = {
         "room": ctx.room.name,
     }
+    interaction_mode, _ = resolveRoomMetadata(ctx.room.metadata)
     session = AgentSession(
         llm=google.beta.realtime.RealtimeModel(
             model="gemini-3.1-flash-live-preview", voice="Charon"
@@ -66,16 +67,12 @@ async def entrypoint(ctx: JobContext):
             audio_enabled=True,
         ),
     )
-    if "video" in ctx.room.metadata:
+    if interaction_mode == "video":
         avatar = bey.AvatarSession(
             avatar_id="2ed7477f-3961-4ce1-b331-5e4530c55a57",
         )
 
         await avatar.start(session, room=ctx.room)
-
-    await session.generate_reply(
-        instructions="Greet the user and offer your assistance."
-    )
     # Join the room and connect to the user
     await ctx.connect()
 

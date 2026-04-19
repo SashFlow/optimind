@@ -13,64 +13,7 @@ import { onDeviceFailure } from "@/components/player/utils";
 import { useRouter } from "next/navigation";
 import { RiArrowRightLine } from "@remixicon/react";
 import { setupDisconnectButton } from "@livekit/components-core";
-
-const audioScenarios = {
-  "medical-officer": {
-    title: "Medical Officer",
-    description:
-      "Support patient intake, appointment coordination, symptom collection, and general healthcare communication.",
-    highlights: [
-      "Collect patient details and reason for visit",
-      "Guide callers through appointment scheduling",
-      "Answer common healthcare workflow questions",
-      "Escalate urgent cases to the right team",
-    ],
-  },
-  "front-desk-agent": {
-    title: "Front Desk Agent",
-    description:
-      "Handle greetings, visitor support, booking requests, and day-to-day front desk conversations.",
-    highlights: [
-      "Welcome callers and identify their needs",
-      "Manage bookings and appointment confirmations",
-      "Share office hours, directions, and policies",
-      "Route requests to the correct department",
-    ],
-  },
-  "resturant-agent": {
-    title: "Resturant Agent",
-    description:
-      "Assist guests with reservations, menu questions, order support, and restaurant service interactions.",
-    highlights: [
-      "Take and update table reservations",
-      "Answer menu and dietary questions",
-      "Support takeaway and delivery inquiries",
-      "Handle guest requests with a friendly tone",
-    ],
-  },
-  // "ai-ivr": {
-  //   title: "AI IVR",
-  //   description:
-  //     "Provide intelligent voice routing, automated menu navigation, and fast caller intent detection.",
-  //   highlights: [
-  //     "Understand caller intent in natural language",
-  //     "Route calls without rigid keypad menus",
-  //     "Reduce wait times with smart automation",
-  //     "Capture context before handoff to an agent",
-  //   ],
-  // },
-  // "answering-incoming-calls": {
-  //   title: "Answering Incoming Calls",
-  //   description:
-  //     "Respond to inbound calls, gather context, and guide each conversation toward the right resolution.",
-  //   highlights: [
-  //     "Answer calls with a professional greeting",
-  //     "Capture caller purpose and urgency",
-  //     "Provide first-line support and information",
-  //     "Transfer or log requests when needed",
-  //   ],
-  // },
-} as const;
+import { audioScenarios } from "@/lib/scenarios";
 
 type AudioScenarioSlug = keyof typeof audioScenarios;
 
@@ -154,23 +97,26 @@ export default function AudioScenarioPage() {
       data-lk-theme="default"
       className="h-full grid content-center bg-(--lk-bg)"
     >
-      <div className="w-full h-full flex items-center justify-center gap-4 z-10">
-        <Button
-          variant="ghost"
-          className="text-white border-0 underline text-xs cursor-pointer"
-          onClick={() => {
-            disconnect(true);
-            router.push("/personal");
-          }}
-        >
-          Personal Assistant <RiArrowRightLine size={24} />
+      <div className="w-full h-full flex items-center justify-between gap-4 z-10">
+        <Button asChild variant="ghost" className="mb-4 pl-0">
+          <Link href="/" className="p-0">
+            <ArrowLeft className="size-4" />
+            Back
+          </Link>
         </Button>
+        <h1 className="text-3xl font-semibold tracking-tight">
+          {scenario.title}
+        </h1>
+        <div />
       </div>
       <RoomContext.Provider value={room}>
         <div className="lk-room-container max-w-5xl w-[90vw] mx-auto max-h-[90vh]">
           <Assistant
             room={room}
             onConnectButtonClicked={onConnectButtonClicked}
+            title={scenario.title}
+            description={scenario.description}
+            highlights={[...scenario.highlights]}
           />
         </div>
       </RoomContext.Provider>

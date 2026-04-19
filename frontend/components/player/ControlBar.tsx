@@ -1,69 +1,40 @@
-import { useVoiceAssistant } from "@livekit/components-react";
-import { RiMap2Line, RiTaxiLine } from "@remixicon/react";
-import { Button } from "../ui/button";
-import { VoiceAssistantControlBar } from "@livekit/components-react";
-import { DisconnectButton } from "@livekit/components-react";
+import {
+  DisconnectButton,
+  VoiceAssistantControlBar,
+  useVoiceAssistant,
+} from "@livekit/components-react";
 import { CloseIcon } from "../CloseIcon";
+import { Button } from "../ui/button";
 
 export function ControlBar(props: {
   onConnectButtonClicked: () => void;
-  setShowCab: (show: boolean) => void;
-  setShowMap: (show: boolean) => void;
 }) {
   const { state: agentState } = useVoiceAssistant();
 
   return (
-    <div className="relative h-15">
-      <>
-        {agentState === "disconnected" && (
-          <div className="uppercase absolute left-1/2 -translate-x-1/2 flex gap-2">
-            <button
-              onClick={() => props.setShowMap(true)}
-              className="bg-white text-black rounded-md px-2 py-1"
-            >
-              <RiMap2Line size={24} />
-            </button>
-            <button
-              onClick={() => props.onConnectButtonClicked()}
-              className="px-4 py-2 bg-white text-black rounded-md"
-            >
-              Connect to Agent
-            </button>
-            <button
-              onClick={() => props.setShowCab(true)}
-              className="bg-white text-black rounded-md px-2 py-1"
-            >
-              <RiTaxiLine size={24} />
-            </button>
-          </div>
-        )}
-      </>
-      <>
-        {agentState !== "disconnected" && agentState !== "connecting" && (
-          <div className="flex h-8 absolute left-1/2 -translate-x-1/2  justify-center gap-2">
-            <Button
-              onClick={() => props.setShowMap(true)}
-              variant="ghost"
-              size="icon"
-              className="bg-white text-black rounded-md px-2 py-1"
-            >
-              <RiMap2Line size={24} />
-            </Button>
-            <VoiceAssistantControlBar controls={{ leave: false }} />
-            <DisconnectButton>
-              <CloseIcon />
-            </DisconnectButton>
-            <Button
-              onClick={() => props.setShowCab(true)}
-              variant="ghost"
-              size="icon"
-              className="bg-white text-black rounded-md px-2 py-1"
-            >
-              <RiTaxiLine size={24} />
-            </Button>
-          </div>
-        )}
-      </>
+    <div className="flex min-h-14 items-center justify-center">
+      {agentState === "disconnected" ? (
+        <Button
+          onClick={props.onConnectButtonClicked}
+          className="px-6"
+          size="lg"
+        >
+          Connect to Agent
+        </Button>
+      ) : null}
+      {agentState === "connecting" ? (
+        <div className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-white/70">
+          Connecting
+        </div>
+      ) : null}
+      {agentState !== "disconnected" && agentState !== "connecting" ? (
+        <div className="flex items-center justify-center gap-2">
+          <VoiceAssistantControlBar controls={{ leave: false }} />
+          <DisconnectButton>
+            <CloseIcon />
+          </DisconnectButton>
+        </div>
+      ) : null}
     </div>
   );
 }
