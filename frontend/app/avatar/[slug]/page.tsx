@@ -57,8 +57,24 @@ export default function AvatarScenarioPage() {
     if (!slug) return null;
     return avatarScenarios[slug as keyof typeof avatarScenarios] ?? null;
   }, [params]);
+  const scenarioType = params?.slug ?? null;
   const onConnectButtonClicked = useCallback(async () => {
-    const response = await fetch(`/api/token?room=video&type=${scenario}`);
+    if (!scenarioType) return;
+
+    const response = await fetch(`/api/token`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        room_metadata: `video-${scenarioType}`,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch token: ${response.status}`);
+    }
+
     const connectionDetailsData: ConnectionDetails = await response.json();
 
     await room.connect(
@@ -66,7 +82,7 @@ export default function AvatarScenarioPage() {
       connectionDetailsData.participantToken,
     );
     await room.localParticipant.setMicrophoneEnabled(true);
-  }, [room]);
+  }, [room, scenarioType]);
 
   useEffect(() => {
     room.on(RoomEvent.MediaDevicesError, onDeviceFailure);

@@ -27,7 +27,8 @@
     "react": "19.2.5",
     "react-dom": "19.2.5",
     "remixicon": "^4.6.0",
-    "tailwind-merge": "^3.3.1"
+    "tailwind-merge": "^3.3.1",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { useRoomContext, useVoiceAssistant } from "@livekit/components-react";
 import Quiz, { QuizQuestion } from "./Quiz";
 
@@ -120,14 +119,9 @@ export default function QuizContainer() {
     questions.every((q) => selectedAnswers[q.id] !== undefined);
 
   return (
-    <AnimatePresence>
+    <>
       {isVisible && currentQuestion && (
-        <motion.div
-          initial={{ opacity: 0, x: -100 }} // Start from left
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -100 }}
-          className="fixed left-8 top-1/4 w-80 bg-gray-900 p-4 rounded-lg shadow-lg"
-        >
+        <div className="fixed left-8 top-1/4 w-80 bg-gray-900 p-4 rounded-lg shadow-lg">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold">Quiz</h2>
             <button
@@ -150,7 +144,7 @@ export default function QuizContainer() {
             <button
               onClick={() =>
                 setCurrentQuestionIndex((prev) =>
-                  prev !== null ? Math.max(0, prev - 1) : 0
+                  prev !== null ? Math.max(0, prev - 1) : 0,
                 )
               }
               disabled={currentQuestionIndex === 0}
@@ -165,7 +159,9 @@ export default function QuizContainer() {
               <button
                 onClick={() =>
                   setCurrentQuestionIndex((prev) =>
-                    prev !== null ? Math.min(questions.length - 1, prev + 1) : 0
+                    prev !== null
+                      ? Math.min(questions.length - 1, prev + 1)
+                      : 0,
                   )
                 }
                 className="px-3 py-1 bg-blue-600 rounded"
@@ -182,8 +178,8 @@ export default function QuizContainer() {
               </button>
             )}
           </div>
-        </motion.div>
+        </div>
       )}
-    </AnimatePresence>
+    </>
   );
 }

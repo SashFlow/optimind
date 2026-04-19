@@ -13,6 +13,7 @@ const app = new Hono().basePath("/api");
 function createParticipantToken(
   userInfo: AccessTokenOptions,
   roomName: string,
+  roomMetadata: string,
 ) {
   const at = new AccessToken(
     process.env.LIVEKIT_API_KEY,
@@ -30,12 +31,18 @@ function createParticipantToken(
     canSubscribe: true,
   };
   at.addGrant(grant);
+  at.metadata = roomMetadata;
   return at.toJwt();
 }
 
 app.post("/token", async (c) => {
-  const roomType = c.req.query("room");
-  const type = c.req.query("type");
+  const body = await c.req.json();
+  const room_name = body.room_name ?? "Demo Room";
+  const participant_name = body.participant_name ?? "Demo User";
+  const participant_identity = body.participant_identity ?? uuidv4();
+  const participant_metadata = body.participant_metadata;
+  const participant_attributes = body.participant_attributes;
+  const room_metadata = body.room_metadata;
 
   try {
     if (process.env.LIVEKIT_URL === undefined) {
@@ -49,19 +56,20 @@ app.post("/token", async (c) => {
     }
 
     // Generate participant token
-    const participantIdentity = `lokibots_voice_assistant_user_${roomType}_${type}_${uuidv4()}`;
-    const roomName = `lokibots_voice_assistant_room_${roomType}_${type}_${uuidv4()}`;
     const participantToken = await createParticipantToken(
-      { identity: participantIdentity },
-      roomName,
+      {
+        identity: participant_identity,
+        name: participant_name,
+        metadata: participant_metadata,
+        attributes: participant_attributes,
+      },
+      room_name,
+      room_metadata,
     );
-    console.log(roomType, type, roomName);
     // Return connection details
     const data: ConnectionDetails = {
       serverUrl: process.env.LIVEKIT_URL,
-      roomName,
       participantToken: participantToken,
-      participantName: participantIdentity,
     };
     return c.json(data, 200);
   } catch (error) {

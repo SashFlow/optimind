@@ -85,11 +85,30 @@ export default function AudioScenarioPage() {
 
   const scenario =
     slug && isAudioScenarioSlug(slug) ? audioScenarios[slug] : null;
+  const scenarioType = slug && isAudioScenarioSlug(slug) ? slug : null;
   const [room] = useState(new Room());
   const { disconnect } = setupDisconnectButton(room);
   const router = useRouter();
   const onConnectButtonClicked = useCallback(async () => {
-    const response = await fetch(`/api/token?room=audio&type=${scenario}`);
+    if (!scenarioType) return;
+
+    const response = await fetch(`/api/token`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        room_metadata: `audio-${scenarioType}`,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Failed to fetch token: ${response.status}${errorText ? ` - ${errorText}` : ""}`,
+      );
+    }
+
     const connectionDetailsData: ConnectionDetails = await response.json();
 
     await room.connect(
@@ -97,7 +116,7 @@ export default function AudioScenarioPage() {
       connectionDetailsData.participantToken,
     );
     await room.localParticipant.setMicrophoneEnabled(true);
-  }, [room]);
+  }, [room, scenarioType]);
 
   useEffect(() => {
     room.on(RoomEvent.MediaDevicesError, onDeviceFailure);
@@ -135,7 +154,7 @@ export default function AudioScenarioPage() {
       data-lk-theme="default"
       className="h-full grid content-center bg-(--lk-bg)"
     >
-      <div className="w-full h-full flex items-center justify-center gap-4 z–10">
+      <div className="w-full h-full flex items-center justify-center gap-4 z-10">
         <Button
           variant="ghost"
           className="text-white border-0 underline text-xs cursor-pointer"

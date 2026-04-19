@@ -1,7 +1,6 @@
 import { useRoomContext } from "@livekit/components-react";
 import { Room } from "livekit-client";
 import { useEffect, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import { AgentVisualizer } from "./AgentVisualizer";
 import { CabContainer } from "./CabContainer";
 import { MapContainer } from "./MapContainer";
@@ -61,7 +60,7 @@ export function Assistant(props: {
 
     room.localParticipant.registerRpcMethod(
       "client.flashcard",
-      handleShowFlashCard
+      handleShowFlashCard,
     );
 
     return () => {
@@ -71,13 +70,9 @@ export function Assistant(props: {
   }, [room]);
   return (
     <>
-      <AnimatePresence mode="wait">
-        <motion.div
+      <>
+        <div
           key="connected"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          transition={{ duration: 0.3, ease: [0.09, 1.04, 0.245, 1.055] }}
           className="flex flex-col items-center gap-4 h-full"
         >
           <AgentVisualizer />
@@ -96,8 +91,8 @@ export function Assistant(props: {
           </div>
           <RoomAudioRenderer />
           {/* <NoAgentNotification state={agentState} /> */}
-        </motion.div>
-      </AnimatePresence>
+        </div>
+      </>
     </>
   );
 }
