@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import json
+import logging
 from typing import Any, Sequence
 
 from livekit.agents.voice import Agent
+from livekit.agents.voice.room_io import RoomIO
 
 from .common import (
     ScenarioDefinition,
@@ -11,6 +13,8 @@ from .common import (
     build_agent_instructions,
     rows_from_mapping,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class ScenarioAgent(Agent):
@@ -50,11 +54,19 @@ class ScenarioAgent(Agent):
         )
 
     async def _send_widget_rpc(self, payload: dict[str, Any]) -> None:
-        subscribed_fut = self.session.room_io.subscribed_fut
+        room_io = self._room_io()
+        if room_io is None:
+            logger.debug(
+                "Skipping widget RPC because the agent session has no room.",
+                extra={"payload_action": payload.get("action")},
+            )
+            return
+
+        subscribed_fut = room_io.subscribed_fut
         if subscribed_fut is not None and not subscribed_fut.done():
             await subscribed_fut
 
-        await self.session.room_io.room.local_participant.perform_rpc(
+        await room_io.room.local_participant.perform_rpc(
             destination_identity=self._remote_identity(),
             method="client.widget",
             payload=json.dumps(payload),
@@ -62,7 +74,10 @@ class ScenarioAgent(Agent):
         )
 
     def _remote_identity(self) -> str:
-        room_io = self.session.room_io
+        room_io = self._room_io()
+        if room_io is None:
+            raise RuntimeError("No room available for widget updates.")
+
         if room_io.linked_participant is not None:
             return room_io.linked_participant.identity
 
@@ -71,3 +86,6 @@ class ScenarioAgent(Agent):
             return remote_participants[0].identity
 
         raise RuntimeError("No remote participant available for widget updates.")
+
+    def _room_io(self) -> RoomIO | None:
+        return getattr(self.session, "_room_io", None)
