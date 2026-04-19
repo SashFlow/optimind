@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from dotenv import load_dotenv
+from google.genai import types
 from livekit import rtc
 from livekit.agents import (
     NOT_GIVEN,
@@ -43,13 +44,19 @@ async def entrypoint(ctx: JobContext):
     }
     interaction_mode, _ = resolveRoomMetadata(ctx.room.metadata)
     session = AgentSession(
-        llm=google.beta.realtime.RealtimeModel(
-            model="gemini-2.5-flash-native-audio-preview-12-2025",
+        llm=google.realtime.RealtimeModel(
+            model="gemini-live-2.5-flash-native-audio",
+            vertexai=True,
+            # realtime_input_config=types.RealtimeInputConfig(
+            #     automatic_activity_detection=types.AutomaticActivityDetection(
+            #         disabled=True,
+            #     ),
+            # ),
             voice="Charon",
-            vertexai=False,
+            input_audio_transcription=None,
         ),
         tools=[google.tools.GoogleSearch()],
-        turn_handling=TurnHandlingOptions(turn_detection=MultilingualModel()),
+        # turn_handling=TurnHandlingOptions(turn_detection=MultilingualModel()),
         vad=ctx.proc.userdata["vad"],
         preemptive_generation=True,
     )
