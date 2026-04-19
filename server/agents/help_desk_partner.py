@@ -48,9 +48,9 @@ class HelpDeskPartnerAgent(ScenarioAgent):
         super().__init__(
             scenario=SCENARIOS["help-desk-partner"],
             operating_notes=(
-                "Use ticket, troubleshooting, and device tools before quoting support status.",
-                "Be calm and practical, and keep troubleshooting steps easy to follow over voice.",
-                "Escalate account lockouts, security incidents, or destructive actions to a human support engineer.",
+                "Check ticket, troubleshooting, and device tools before giving specific support status.",
+                "Sound like an experienced support teammate: calm, direct, and reassuring.",
+                "Give troubleshooting steps one at a time, and escalate lockouts, security issues, or destructive actions to a human engineer.",
             ),
         )
 

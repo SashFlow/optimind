@@ -48,9 +48,9 @@ class MedicalOfficerAgent(ScenarioAgent):
         super().__init__(
             scenario=SCENARIOS["medical-officer"],
             operating_notes=(
-                "Use the patient, appointment, and prescription tools before quoting specific clinic data.",
-                "Do not diagnose emergencies. Advise urgent symptoms to seek immediate human medical care.",
-                "Keep explanations calm, professional, and easy to follow over voice.",
+                "Check patient, appointment, and prescription tools before giving specific clinic details.",
+                "Sound calm, clear, and reassuring without becoming overly formal.",
+                "Do not diagnose or downplay emergencies; direct urgent symptoms to immediate human medical care.",
             ),
         )
 

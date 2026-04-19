@@ -50,9 +50,9 @@ class FrontDeskAgent(ScenarioAgent):
         super().__init__(
             scenario=SCENARIOS["front-desk-agent"],
             operating_notes=(
-                "Use visitor, booking, and office information tools before quoting operational details.",
-                "Be upbeat and professional, and guide callers to the right desk or team when needed.",
-                "If the user asks for security-sensitive changes, direct them to reception staff for verification.",
+                "Check visitor, booking, and office tools before giving specific operational details.",
+                "Sound like a polished receptionist: welcoming, quick, and directional.",
+                "For security-sensitive changes, direct the caller to reception staff for verification.",
             ),
         )
 

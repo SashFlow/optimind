@@ -3,17 +3,20 @@ from dataclasses import dataclass
 from typing import Optional
 
 from dotenv import load_dotenv
+from livekit import rtc
 from livekit.agents import (
     NOT_GIVEN,
     AgentFalseInterruptionEvent,
     JobContext,
     JobProcess,
-    RoomInputOptions,
+    TurnHandlingOptions,
     WorkerOptions,
     cli,
+    room_io,
 )
 from livekit.agents.voice import AgentSession
 from livekit.plugins import bey, google, noise_cancellation, silero
+from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
 from agents import getAgent, resolveRoomMetadata
 
@@ -45,14 +48,10 @@ async def entrypoint(ctx: JobContext):
             voice="Charon",
             vertexai=False,
         ),
-        turn_handling={
-            "interruption": {
-                "mode": "adaptive",
-            },
-            "preemptive_generation": {"preemptive_tts": True},
-        },
-        turn_detection="realtime_llm",
+        tools=[google.tools.GoogleSearch()],
+        turn_handling=TurnHandlingOptions(turn_detection=MultilingualModel()),
         vad=ctx.proc.userdata["vad"],
+        preemptive_generation=True,
     )
 
     @session.on("agent_false_interruption")
@@ -63,10 +62,12 @@ async def entrypoint(ctx: JobContext):
     await session.start(
         agent=getAgent(ctx.room.metadata),
         room=ctx.room,
-        room_input_options=RoomInputOptions(
-            noise_cancellation=noise_cancellation.BVC(),
-            delete_room_on_close=True,
-            audio_enabled=True,
+        room_options=room_io.RoomOptions(
+            audio_input=room_io.AudioInputOptions(
+                noise_cancellation=lambda params: noise_cancellation.BVCTelephony()
+                if params.participant.kind == rtc.ParticipantKind.PARTICIPANT_KIND_SIP
+                else noise_cancellation.BVC(),
+            ),
         ),
     )
     if interaction_mode == "video":
@@ -75,10 +76,12 @@ async def entrypoint(ctx: JobContext):
         )
 
         await avatar.start(session, room=ctx.room)
-    # Join the room and connect to the user
-    await session.generate_reply(user_input="Greet user in a friendly manner.")
     await ctx.connect()
 
 
 if __name__ == "__main__":
-    cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint, prewarm_fnc=prewarm))
+    cli.run_app(
+        WorkerOptions(
+            entrypoint_fnc=entrypoint, prewarm_fnc=prewarm, agent_name="demo-agent"
+        )
+    )

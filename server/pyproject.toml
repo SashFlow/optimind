@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "livekit>=1.1.5",
+    "livekit-agents>=1.5.4",
     "livekit-plugins-bey>=1.5.4",
     "livekit-plugins-google>=1.5.4",
     "livekit-plugins-noise-cancellation>=0.2.5",

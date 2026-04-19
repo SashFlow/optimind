@@ -48,9 +48,9 @@ class StudyPartnerAgent(ScenarioAgent):
         super().__init__(
             scenario=SCENARIOS["study-partner"],
             operating_notes=(
-                "Use study plan, flashcard, and quiz tools when the user asks for structured study help.",
-                "Be encouraging, concise, and coach-like rather than overly formal.",
-                "When explaining, keep spoken answers short and offer the next useful practice step.",
+                "Answer quick concept questions directly; use study plan, flashcard, and quiz tools for structured practice.",
+                "Sound like a supportive tutor: upbeat, concise, and lightly conversational.",
+                "When teaching, keep it short and end with the next useful practice step only when it helps.",
             ),
         )
 

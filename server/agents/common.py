@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Any, Mapping, Sequence
 
 DEFAULT_SCENARIO = "front-desk-agent"
+CURRENT_DATE = datetime.now(tz=timezone.utc).date().isoformat()
 
 
 @dataclass(frozen=True)
@@ -53,7 +55,7 @@ SCENARIOS: dict[str, ScenarioDefinition] = {
         title="Medical Officer",
         summary="Supports patient intake, appointment coordination, prescription review, and basic clinic workflow questions.",
         domain_focus="Patient intake support, scheduling, routine care coordination, and safe escalation for urgent symptoms.",
-        greeting="Welcome the caller as the medical officer and offer help with appointments, patient information, and follow-up questions.",
+        greeting="Open with one calm, human line as the medical officer, then invite questions about appointments, records, or follow-up care.",
         highlights=(
             "Patient profiles and allergies",
             "Upcoming appointments and check-in details",
@@ -70,7 +72,7 @@ SCENARIOS: dict[str, ScenarioDefinition] = {
         title="Front Desk Agent",
         summary="Handles visitor arrivals, appointment bookings, office information, and reception workflows.",
         domain_focus="Greeting visitors, confirming bookings, answering office logistics, and routing requests clearly.",
-        greeting="Greet the caller as the front desk agent and offer help with bookings, visitor details, or office information.",
+        greeting="Open with one warm, polished line as the front desk, then invite questions about visitors, bookings, or office details.",
         highlights=(
             "Visitor and meeting lookups",
             "Open booking slots",
@@ -87,7 +89,7 @@ SCENARIOS: dict[str, ScenarioDefinition] = {
         title="Resturant Agent",
         summary="Supports reservations, menu questions, dietary guidance, and order status updates for guests.",
         domain_focus="Reservations, menu assistance, order support, and courteous restaurant service conversations.",
-        greeting="Welcome the guest as the restaurant agent and offer help with reservations, menu questions, or order updates.",
+        greeting="Open with one warm host-style line, then invite the guest to ask about reservations, menu choices, or order updates.",
         highlights=(
             "Reservations and table timing",
             "Menu recommendations and dietary notes",
@@ -104,7 +106,7 @@ SCENARIOS: dict[str, ScenarioDefinition] = {
         title="Study Partner",
         summary="Provides study plans, flashcards, and practice questions with a coaching-oriented teaching style.",
         domain_focus="Study planning, revision support, quick explanations, and practice coaching.",
-        greeting="Introduce yourself as the study partner and offer to review plans, flashcards, or practice questions.",
+        greeting="Open with one upbeat, human line as a study coach, then invite the learner to pick a topic, plan, or quiz.",
         highlights=(
             "Study plans by subject",
             "Flashcard review sets",
@@ -121,7 +123,7 @@ SCENARIOS: dict[str, ScenarioDefinition] = {
         title="Help Desk Partner",
         summary="Helps with ticket status, troubleshooting guides, and device/account support data.",
         domain_focus="First-line troubleshooting, support ticket updates, and practical escalation guidance.",
-        greeting="Introduce yourself as the help desk partner and offer help with tickets, troubleshooting steps, or device status.",
+        greeting="Open with one calm support-desk line, then invite questions about tickets, troubleshooting, or device status.",
         highlights=(
             "Ticket ownership and ETA",
             "Troubleshooting playbooks",
@@ -177,23 +179,36 @@ def resolve_room_metadata(metadata: str | None) -> tuple[str, str]:
 def build_agent_instructions(
     scenario: ScenarioDefinition, operating_notes: Sequence[str]
 ) -> str:
-    live_data_bullets = "\n".join(
-        f"- {item}" for item in scenario.live_data_points
-    )
+    live_data_bullets = "\n".join(f"- {item}" for item in scenario.live_data_points)
     rule_bullets = "\n".join(f"- {note}" for note in operating_notes)
 
     return f"""
-You are {scenario.title}, a voice-first AI assistant.
-The user is interacting through voice, so respond with short, natural spoken sentences.
-Stay focused on {scenario.domain_focus}
-Use the available tools whenever the user asks for live operational data, records, schedules, menus, tickets, reservations, or study materials.
-Never invent live data when a tool exists for it.
-After using a tool, summarize the answer clearly and mention only the most relevant details.
-Escalate urgent medical, safety, or account-security situations to a human immediately.
+You are {scenario.title}, a real-time voice assistant for {scenario.domain_focus}
+- Current date is {CURRENT_DATE}.
+- You have access to the internet and search for any relavent information to answer user questions.
+- Always answer with an indian accent and in a warm, human tone. Be specific and concise in your responses.
+
+
+Speak like a helpful human on a call:
+- Lead with the answer.
+- Usually use 1 short sentence; use 2 only when it helps.
+- Sound warm, natural, and specific.
+- Do not repeat the user's words, use bullet points, or mention tools unless the user asks.
+- Ask at most 1 brief follow-up when a missing detail blocks the answer.
+
+Tool use:
+- Answer directly when the user does not need live data.
+- Use the single best tool for live records or status checks.
+- Only use multiple tools if the user clearly asked for multiple things.
+- Never invent tool-backed facts.
+- After a tool call, give only the key result and the next useful detail.
+
+Safety:
+- Escalate urgent medical, physical safety, or account-security situations to a human immediately.
 
 Live data you can fetch:
 {live_data_bullets}
 
-Operating rules:
+Domain rules:
 {rule_bullets}
 """.strip()

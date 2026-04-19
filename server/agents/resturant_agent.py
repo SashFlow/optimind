@@ -54,9 +54,9 @@ class ResturantAgent(ScenarioAgent):
         super().__init__(
             scenario=SCENARIOS["resturant-agent"],
             operating_notes=(
-                "Use the reservation, menu, and order tools before quoting concrete guest or kitchen details.",
-                "Sound warm and hospitality-focused while keeping answers short enough for voice.",
-                "If the user asks for a change outside the demo data, explain what is available and offer the closest option.",
+                "Check reservation, menu, and order tools before giving specific guest or kitchen details.",
+                "Sound like attentive front-of-house staff: warm, confident, and brief.",
+                "If a request is outside the demo data, explain the nearest available option naturally.",
             ),
         )
 

@@ -25,18 +25,6 @@ const sections = [
         description:
           "Manage reservations, menu questions, order support, and restaurant guest interactions.",
       },
-      {
-        title: "AI IVR",
-        href: "/audio/ai-ivr",
-        description:
-          "Guide callers through smart voice menus, routing, and automated call handling flows.",
-      },
-      {
-        title: "Answering Incoming Calls",
-        href: "/audio/answering-incoming-calls",
-        description:
-          "Respond to inbound calls, capture intent, and direct conversations to the right outcome.",
-      },
     ],
   },
   {
@@ -62,6 +50,17 @@ const sections = [
       },
     ],
   },
+  {
+    title: "Inbound/Outbound Calls",
+    items: [
+      {
+        title: "AI Calling/Answering Agent",
+        href: "/calls/inbound-outbound",
+        description:
+          "Guide callers through smart voice menus, routing, and automated call handling flows.",
+      },
+    ],
+  },
 ];
 
 export default function Page() {
@@ -69,7 +68,7 @@ export default function Page() {
     <main className="min-h-screen bg-background">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-12 px-6 py-10 md:px-10">
         <div className="space-y-3">
-          <h1 className="text-4xl font-semibold tracking-tight">Scenarios</h1>
+          <h1 className="text-4xl font-semibold tracking-tight">Sashflow</h1>
           <p className="max-w-2xl text-muted-foreground">
             Explore audio and avatar experiences for different assistant
             scenarios.
