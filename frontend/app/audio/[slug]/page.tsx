@@ -48,28 +48,28 @@ const audioScenarios = {
       "Handle guest requests with a friendly tone",
     ],
   },
-  "ai-ivr": {
-    title: "AI IVR",
-    description:
-      "Provide intelligent voice routing, automated menu navigation, and fast caller intent detection.",
-    highlights: [
-      "Understand caller intent in natural language",
-      "Route calls without rigid keypad menus",
-      "Reduce wait times with smart automation",
-      "Capture context before handoff to an agent",
-    ],
-  },
-  "answering-incoming-calls": {
-    title: "Answering Incoming Calls",
-    description:
-      "Respond to inbound calls, gather context, and guide each conversation toward the right resolution.",
-    highlights: [
-      "Answer calls with a professional greeting",
-      "Capture caller purpose and urgency",
-      "Provide first-line support and information",
-      "Transfer or log requests when needed",
-    ],
-  },
+  // "ai-ivr": {
+  //   title: "AI IVR",
+  //   description:
+  //     "Provide intelligent voice routing, automated menu navigation, and fast caller intent detection.",
+  //   highlights: [
+  //     "Understand caller intent in natural language",
+  //     "Route calls without rigid keypad menus",
+  //     "Reduce wait times with smart automation",
+  //     "Capture context before handoff to an agent",
+  //   ],
+  // },
+  // "answering-incoming-calls": {
+  //   title: "Answering Incoming Calls",
+  //   description:
+  //     "Respond to inbound calls, gather context, and guide each conversation toward the right resolution.",
+  //   highlights: [
+  //     "Answer calls with a professional greeting",
+  //     "Capture caller purpose and urgency",
+  //     "Provide first-line support and information",
+  //     "Transfer or log requests when needed",
+  //   ],
+  // },
 } as const;
 
 type AudioScenarioSlug = keyof typeof audioScenarios;
