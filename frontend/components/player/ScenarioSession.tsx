@@ -36,6 +36,7 @@ export function ScenarioSession(props: ScenarioSessionProps) {
   );
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectError, setConnectError] = useState<string | null>(null);
+  const [isClient, setIsClient] = useState(false);
   const activeSessionRef = useRef<ConnectionDetails | null>(null);
   const cleanupInFlightRef = useRef(false);
 
@@ -84,6 +85,7 @@ export function ScenarioSession(props: ScenarioSessionProps) {
   }, []);
 
   useEffect(() => {
+    setIsClient(true);
     room.on(RoomEvent.MediaDevicesError, onDeviceFailure);
 
     const handleDisconnected = () => {
@@ -229,19 +231,20 @@ export function ScenarioSession(props: ScenarioSessionProps) {
 
       <section className="rounded-3xl border border-white/10 bg-(--lk-bg) p-6 shadow-2xl">
         <div className="mx-auto max-w-md">
-          <PreJoin
-            defaults={{
-              audioEnabled: true,
-              videoEnabled: mode === "video",
-            }}
-            onError={onDeviceFailure}
-            onSubmit={(choices) => {
-              void handleJoin(choices);
-            }}
-            onValidate={() => true}
-            persistUserChoices
-            joinLabel={isConnecting ? "Joining..." : "Join session"}
-          />
+          {isClient ? (
+            <PreJoin
+              defaults={{
+                audioEnabled: true,
+                videoEnabled: mode === "video",
+              }}
+              onError={onDeviceFailure}
+              onSubmit={(choices) => {
+                void handleJoin(choices);
+              }}
+              onValidate={() => true}
+              joinLabel={isConnecting ? "Joining..." : "Join session"}
+            />
+          ) : null}
         </div>
       </section>
     </div>
