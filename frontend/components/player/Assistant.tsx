@@ -3,8 +3,7 @@ import {
   useRoomContext,
   useVoiceAssistant,
 } from "@livekit/components-react";
-import { Room } from "livekit-client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { LiveWidget, LiveWidgetRpcPayload, ScenarioDetails } from "@/types";
 import { AgentVisualizer } from "./AgentVisualizer";
 import { ControlBar } from "./ControlBar";
@@ -45,22 +44,14 @@ function isWidgetRpcPayload(value: unknown): value is LiveWidgetRpcPayload {
 }
 
 type AssistantProps = {
-  onConnectButtonClicked: () => void;
-  room: Room;
+  mediaMode: "audio" | "video";
 } & ScenarioDetails;
 
 export function Assistant(props: AssistantProps) {
-  const { onConnectButtonClicked, title, description, highlights } = props;
+  const { mediaMode, title, description, highlights } = props;
   const room = useRoomContext();
   const { state: agentState } = useVoiceAssistant();
   const [widgets, setWidgets] = useState<LiveWidget[]>([]);
-  const hasConnectedRef = useRef(false);
-
-  useEffect(() => {
-    if (hasConnectedRef.current) return;
-    hasConnectedRef.current = true;
-    onConnectButtonClicked();
-  }, [onConnectButtonClicked]);
 
   useEffect(() => {
     if (!room) return;
@@ -126,7 +117,7 @@ export function Assistant(props: AssistantProps) {
           <AgentVisualizer />
         </div>
         <div className="w-full">
-          <ControlBar onConnectButtonClicked={onConnectButtonClicked} />
+          <ControlBar mediaMode={mediaMode} />
         </div>
         <RoomAudioRenderer />
       </div>

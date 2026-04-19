@@ -1,6 +1,8 @@
 export type ConnectionDetails = {
   serverUrl: string;
   participantToken: string;
+  roomName: string;
+  participantIdentity: string;
 };
 
 export type ScenarioDetails = {
