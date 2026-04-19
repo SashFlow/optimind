@@ -4,10 +4,10 @@ from typing import Optional
 
 from dotenv import load_dotenv
 from livekit.agents import (
+    NOT_GIVEN,
     AgentFalseInterruptionEvent,
     JobContext,
     JobProcess,
-    NOT_GIVEN,
     RoomInputOptions,
     WorkerOptions,
     cli,
@@ -41,7 +41,9 @@ async def entrypoint(ctx: JobContext):
     interaction_mode, _ = resolveRoomMetadata(ctx.room.metadata)
     session = AgentSession(
         llm=google.beta.realtime.RealtimeModel(
-            model="gemini-3.1-flash-live-preview", voice="Charon"
+            model="gemini-2.5-flash-native-audio-preview-12-2025",
+            voice="Charon",
+            vertexai=False,
         ),
         turn_handling={
             "interruption": {
@@ -74,6 +76,7 @@ async def entrypoint(ctx: JobContext):
 
         await avatar.start(session, room=ctx.room)
     # Join the room and connect to the user
+    await session.generate_reply(user_input="Greet user in a friendly manner.")
     await ctx.connect()
 
 
