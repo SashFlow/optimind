@@ -5,7 +5,8 @@ from typing import Any
 from livekit.agents import RunContext, function_tool
 
 from .base import ScenarioAgent
-from .common import SCENARIOS, WidgetPayload, normalize_lookup_key, rows_from_mapping
+from .common import WidgetPayload, normalize_lookup_key, rows_from_mapping
+from .prompts import get_prompts
 
 DEFAULT_GUEST = "Maya Kapoor"
 DEFAULT_PREFERENCE = "vegetarian"
@@ -52,11 +53,54 @@ ORDER_STATUS = {
 class ResturantAgent(ScenarioAgent):
     def __init__(self) -> None:
         super().__init__(
-            scenario=SCENARIOS["resturant-agent"],
-            operating_notes=(
-                "Check reservation, menu, and order tools before giving specific guest or kitchen details.",
-                "Sound like attentive front-of-house staff: warm, confident, and brief.",
-                "If a request is outside the demo data, explain the nearest available option naturally.",
+            instructions=get_prompts(
+                "Restaurant Support",
+                """
+You help callers with restaurant reservations, menu recommendations, dietary guidance, and order status updates.
+Use the reservation, menu, and order tools before giving specific guest, kitchen, or delivery details.
+Sound like attentive front-of-house staff: warm, confident, and brief.
+If a request is outside the demo data, explain the nearest available option naturally.
+""",
+                """
+## Opening
+Always start with:
+"Hello! This is Sai, can you hear me okay?"
+
+## Flow
+- Greet the guest warmly and understand whether they need help with a reservation, menu choice, or order update
+- Use reservation lookup for booking details, menu recommendations for food guidance, and order status for live updates
+- If the request is unclear, ask one short clarifying question
+- Keep replies brief, natural, and service-oriented
+
+## Reservation Requests
+- Confirm reservation details only after checking the reservation tool
+- If no reservation is found, offer the nearest available option from the demo data naturally
+
+## Menu Guidance
+- Use the menu tool before recommending dishes tied to preferences or dietary needs
+- Keep recommendations short and practical
+
+## Order Updates
+- Use the order status tool before sharing preparation or delivery timing
+- Share only the key status and next useful detail
+
+## Escalation
+- If the user asks for changes that require staff verification or anything outside the available data, direct them to the restaurant team
+""",
+                """
+User: "Can you check Maya Kapoor's reservation?"
+Assistant: "Sure — let me check that for you."
+
+User: "What do you recommend for a vegetarian?"
+Assistant: "I can help with that — let me pull up the vegetarian options."
+
+User: "Where's my order ORD-104?"
+Assistant: "I'll check the latest order status now."
+
+User: "Can you change my booking?"
+Assistant: "I can share the current reservation details, but booking changes would need the restaurant team."
+""",
+                "",
             ),
         )
 
@@ -178,7 +222,9 @@ class ResturantAgent(ScenarioAgent):
             result = {
                 "found": False,
                 "requested_order": order_id,
-                "available_orders": [entry["order_id"] for entry in ORDER_STATUS.values()],
+                "available_orders": [
+                    entry["order_id"] for entry in ORDER_STATUS.values()
+                ],
             }
             await self.push_widget(
                 WidgetPayload(

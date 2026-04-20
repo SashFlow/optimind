@@ -5,6 +5,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const sections = [
   {
+    title: "Default",
+    items: [
+      {
+        title: "General Purpose (Audio)",
+        href: "/audio/general-purpose",
+        description:
+          "A general purpose Voice Assistant for handling a variety of interactions across different scenarios.",
+      },
+      {
+        title: "General Purpose (Avatar)",
+        href: "/avatar/general-purpose",
+        description:
+          "A general purpose Avatar Assistant for handling a variety of interactions across different scenarios.",
+      },
+    ],
+  },
+  {
     title: "Audio",
     items: [
       {

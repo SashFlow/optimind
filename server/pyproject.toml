@@ -15,4 +15,5 @@ dependencies = [
     "livekit-plugins-turn-detector>=1.5.4",
     "livekit-protocol>=1.1.5",
     "python-dotenv>=1.2.2",
+    "tzdata>=2026.1",
 ]

@@ -1,11 +1,8 @@
 import logging
-import os
 from dataclasses import dataclass
 from typing import Optional
 
 from dotenv import load_dotenv
-from google.auth.credentials import Credentials
-from google.oauth2 import service_account
 from livekit import rtc
 from livekit.agents import (
     NOT_GIVEN,
@@ -49,8 +46,6 @@ async def entrypoint(ctx: JobContext):
     turn_detector = MultilingualModel()
 
     realtime_model = google.realtime.RealtimeModel(
-        model="gemini-live-2.5-flash-native-audio",
-        vertexai=True,
         voice="Charon",
     )
 
@@ -82,6 +77,12 @@ async def entrypoint(ctx: JobContext):
         else:
             return noise_cancellation.BVC()
 
+    if interaction_mode == "video":
+        avatar = bey.AvatarSession(
+            avatar_id="2ed7477f-3961-4ce1-b331-5e4530c55a57",
+        )
+        await avatar.start(session, room=ctx.room)
+
     await session.start(
         agent=getAgent(ctx.room.metadata),
         room=ctx.room,
@@ -91,12 +92,6 @@ async def entrypoint(ctx: JobContext):
             ),
         ),
     )
-
-    if interaction_mode == "video":
-        avatar = bey.AvatarSession(
-            avatar_id="2ed7477f-3961-4ce1-b331-5e4530c55a57",
-        )
-        await avatar.start(session, room=ctx.room)
 
     await ctx.connect()
 
