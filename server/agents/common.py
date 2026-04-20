@@ -1,11 +1,20 @@
 from __future__ import annotations
 
+import json
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 DEFAULT_SCENARIO = "front-desk-agent"
 CURRENT_DATE = datetime.now(tz=timezone.utc).date().isoformat()
+INTERACTION_MODES = {"audio", "video"}
+INTERACTION_MODE_BY_SCENARIO_TYPE = {
+    "audio": "audio",
+    "avatar": "video",
+    "calls": "audio",
+    "video": "video",
+}
 
 
 @dataclass(frozen=True)
@@ -155,25 +164,59 @@ def rows_from_mapping(mapping: Mapping[str, Any]) -> tuple[WidgetField, ...]:
     )
 
 
-def extract_scenario_slug(metadata: str | None) -> str:
+def resolve_metadata_payload(metadata: str | None) -> tuple[str, str]:
     raw_metadata = (metadata or "").strip()
     if not raw_metadata:
-        return DEFAULT_SCENARIO
+        return "audio", DEFAULT_SCENARIO
 
-    for prefix in ("audio-", "video-"):
+    if raw_metadata.startswith("{"):
+        try:
+            payload = json.loads(raw_metadata)
+        except json.JSONDecodeError:
+            pass
+        else:
+            if isinstance(payload, Mapping):
+                slug = str(
+                    payload.get("scenarioSlug")
+                    or payload.get("slug")
+                    or DEFAULT_SCENARIO
+                ).strip() or DEFAULT_SCENARIO
+
+                interaction_mode_value = payload.get("interactionMode")
+                if interaction_mode_value is None and payload.get("scenarioType") is not None:
+                    interaction_mode_value = INTERACTION_MODE_BY_SCENARIO_TYPE.get(
+                        normalize_lookup_key(str(payload["scenarioType"])),
+                        "audio",
+                    )
+
+                interaction_mode = normalize_lookup_key(
+                    str(interaction_mode_value or "audio")
+                )
+                if interaction_mode not in INTERACTION_MODES:
+                    interaction_mode = "audio"
+
+                return interaction_mode, slug
+
+    for prefix, interaction_mode in (
+        ("video-", "video"),
+        ("avatar-", "video"),
+        ("audio-", "audio"),
+        ("calls-", "audio"),
+    ):
         if raw_metadata.startswith(prefix):
-            return raw_metadata[len(prefix) :]
+            slug = raw_metadata[len(prefix) :].strip()
+            return interaction_mode, slug or DEFAULT_SCENARIO
 
-    return raw_metadata
+    return "audio", raw_metadata
+
+
+def extract_scenario_slug(metadata: str | None) -> str:
+    _, scenario_slug = resolve_metadata_payload(metadata)
+    return scenario_slug
 
 
 def resolve_room_metadata(metadata: str | None) -> tuple[str, str]:
-    raw_metadata = (metadata or "").strip()
-    if raw_metadata.startswith("video-"):
-        return "video", raw_metadata[len("video-") :]
-    if raw_metadata.startswith("audio-"):
-        return "audio", raw_metadata[len("audio-") :]
-    return "audio", raw_metadata or DEFAULT_SCENARIO
+    return resolve_metadata_payload(metadata)
 
 
 def build_agent_instructions(

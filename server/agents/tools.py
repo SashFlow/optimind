@@ -1,4 +1,5 @@
 import logging
+import time
 
 from livekit import api
 from livekit.agents import RunContext, function_tool, get_job_context
@@ -18,6 +19,7 @@ async def end_call(ctx: RunContext):
     logger.info("Ending call as requested by agent.")
 
     try:
+        time.sleep(0.5)
         await job_ctx.api.room.delete_room(
             api.DeleteRoomRequest(room=job_ctx.room.name)
         )

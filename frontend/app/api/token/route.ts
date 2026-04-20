@@ -17,6 +17,10 @@ const LIVEKIT_URL = process.env.LIVEKIT_URL;
 // don't cache the results
 export const revalidate = 0;
 
+function resolveInteractionMode(scenarioType: string): 'audio' | 'video' {
+  return scenarioType === 'avatar' || scenarioType === 'video' ? 'video' : 'audio';
+}
+
 export async function POST(req: Request) {
   if (process.env.NODE_ENV !== 'development') {
     throw new Error(
@@ -40,6 +44,26 @@ export async function POST(req: Request) {
     const roomConfig = body?.room_config
       ? RoomConfiguration.fromJson(body.room_config, { ignoreUnknownFields: true })
       : new RoomConfiguration();
+
+    // Attach scenario details to the dispatched agent so the worker can read
+    // them from ctx.job.metadata when the room is created from this token.
+    const { searchParams } = new URL(req.url);
+    const scenarioType = searchParams.get('scenarioType') ?? 'audio';
+    const slug = searchParams.get('slug') ?? '';
+    if (slug) {
+      const interactionMode = resolveInteractionMode(scenarioType);
+      const agentMetadata = JSON.stringify({
+        interactionMode,
+        scenarioSlug: slug,
+        scenarioType,
+      });
+
+      roomConfig.metadata = `${interactionMode}-${slug}`;
+      roomConfig.agents = (roomConfig.agents ?? []).map((agent) => {
+        agent.metadata = agentMetadata;
+        return agent;
+      });
+    }
 
     // Generate participant token
     const participantName = 'user';
