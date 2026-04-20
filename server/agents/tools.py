@@ -1,16 +1,22 @@
+import asyncio
 import logging
-import time
 
 from livekit import api
 from livekit.agents import RunContext, function_tool, get_job_context
 
-logger = logging.getLogger("avatar.tools")
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
 @function_tool
 async def end_call(ctx: RunContext):
-    """End the call. If  the user isn't interested, expresses general dissatisfaction, wants to end the call, or if the call has been going on for a long time, the agent can choose to end the call by invoking this tool."""
+    """End the current call or live session in a controlled way.
+
+    Use this when the user explicitly wants to stop, the conversation has naturally
+    finished, the user is no longer engaging, or a polite close-out is the best
+    experience. Prefer giving a short closing line before invoking this tool so the
+    ending feels natural to the user.
+    """
     job_ctx = get_job_context()
     if job_ctx is None:
         logging.error("No job context found when trying to end call.")
@@ -19,7 +25,7 @@ async def end_call(ctx: RunContext):
     logger.info("Ending call as requested by agent.")
 
     try:
-        time.sleep(0.5)
+        await asyncio.sleep(5)
         await job_ctx.api.room.delete_room(
             api.DeleteRoomRequest(room=job_ctx.room.name)
         )
@@ -32,7 +38,13 @@ async def end_call(ctx: RunContext):
 
 @function_tool
 async def transfer_to_human(ctx: RunContext) -> str:
-    """Transfer the call to a human agent. If the user requests to speak with a human agent, or if the agent determines that the user's needs would be better served by a human, the agent can choose to transfer the call by invoking this tool."""
+    """Escalate the conversation to a human agent or staff member.
+
+    Use this when the user explicitly asks for a person, when policy or safety
+    requires human review, when account or identity verification is needed, or when
+    the available tools do not support the requested action. Tell the user that you
+    are transferring them before calling this tool.
+    """
     job_ctx = get_job_context()
     if job_ctx is None:
         logging.error("No job context found when trying to transfer to human.")

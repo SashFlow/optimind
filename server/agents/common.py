@@ -176,14 +176,20 @@ def resolve_metadata_payload(metadata: str | None) -> tuple[str, str]:
             pass
         else:
             if isinstance(payload, Mapping):
-                slug = str(
-                    payload.get("scenarioSlug")
-                    or payload.get("slug")
+                slug = (
+                    str(
+                        payload.get("scenarioSlug")
+                        or payload.get("slug")
+                        or DEFAULT_SCENARIO
+                    ).strip()
                     or DEFAULT_SCENARIO
-                ).strip() or DEFAULT_SCENARIO
+                )
 
                 interaction_mode_value = payload.get("interactionMode")
-                if interaction_mode_value is None and payload.get("scenarioType") is not None:
+                if (
+                    interaction_mode_value is None
+                    and payload.get("scenarioType") is not None
+                ):
                     interaction_mode_value = INTERACTION_MODE_BY_SCENARIO_TYPE.get(
                         normalize_lookup_key(str(payload["scenarioType"])),
                         "audio",

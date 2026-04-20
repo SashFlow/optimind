@@ -4,8 +4,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { TokenSource } from 'livekit-client';
 import { useSession } from '@livekit/components-react';
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr';
-import { ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr';
+import { ArrowLeftIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr';
 import type { AppConfig } from '@/app-config';
 import { AgentSessionProvider } from '@/components/agents-ui/agent-session-provider';
 import { StartAudioButton } from '@/components/agents-ui/start-audio-button';
@@ -77,7 +76,7 @@ export function App({ appConfig, scenarioType }: AppProps) {
       <main className="grid h-svh grid-cols-1 place-content-center">
         <ViewController appConfig={appConfig} />
       </main>
-      <StartAudioButton label="Start Audio" />
+      <StartAudioButton label="Start" />
       <Toaster
         icons={{
           warning: <WarningIcon weight="bold" />,

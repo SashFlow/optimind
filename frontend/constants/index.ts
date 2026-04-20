@@ -55,15 +55,4 @@ export const scenarios = {
       'Encourage structured learning and study planning',
     ],
   },
-  'help-desk-partner': {
-    sessionType: ['avatar'],
-    title: 'Help Desk Partner',
-    description:
-      'A visual support assistant for troubleshooting workflows, answering user questions, and guiding people through common issues.',
-    highlights: [
-      'Walk users through troubleshooting steps',
-      'Answer product and support questions clearly',
-      'Provide a friendly first-line support experience',
-    ],
-  },
 } satisfies Record<string, ScenarioDetails>;

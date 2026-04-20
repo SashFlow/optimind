@@ -1,258 +1,398 @@
 from __future__ import annotations
 
-from typing import Any
+import asyncio
+import json
+import logging
+import uuid
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import List, Optional, TypedDict
 
-from livekit.agents import RunContext, function_tool
+from dotenv import load_dotenv
+from livekit.agents import JobContext, RunContext, function_tool
 
 from .base import ScenarioAgent
-from .common import WidgetPayload, normalize_lookup_key, rows_from_mapping
-from .prompts import get_prompts
 
-DEFAULT_SUBJECT = "biology"
-DEFAULT_TOPIC = "photosynthesis"
+load_dotenv(dotenv_path=Path(__file__).parent.parent / ".env")
 
-STUDY_PLANS = {
-    "biology": {
-        "subject": "Biology",
-        "focus_block_1": "Cell structure recap for 25 minutes",
-        "focus_block_2": "Photosynthesis concept map for 20 minutes",
-        "focus_block_3": "Past-paper questions for 15 minutes",
-        "break_pattern": "5-minute break after each focus block",
-    }
-}
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
-FLASHCARD_SETS = {
-    "photosynthesis": {
-        "topic": "Photosynthesis",
-        "cards": [
-            "Chlorophyll captures light energy in chloroplasts",
-            "Light-dependent reactions produce ATP and NADPH",
-            "The Calvin cycle uses carbon dioxide to form glucose",
-        ],
-        "memory_tip": "Remember Light first, Sugar second",
-    }
-}
 
-PRACTICE_QUIZZES = {
-    "photosynthesis": {
-        "topic": "Photosynthesis",
-        "question_1": "Why is chlorophyll essential in photosynthesis?",
-        "question_2": "What are the outputs of the light-dependent stage?",
-        "question_3": "How does the Calvin cycle use ATP and NADPH?",
-        "coaching_tip": "Answer in short steps: purpose, process, outcome.",
-    }
-}
+class QuizAnswerDict(TypedDict):
+    text: str
+    is_correct: bool
+
+
+class QuizQuestionDict(TypedDict):
+    text: str
+    answers: List[QuizAnswerDict]
+
+
+@dataclass
+class FlashCard:
+    """Class to represent a flash card."""
+
+    id: str
+    question: str
+    answer: str
+    is_flipped: bool = False
+
+
+@dataclass
+class QuizAnswer:
+    """Class to represent a quiz answer option."""
+
+    id: str
+    text: str
+    is_correct: bool
+
+
+@dataclass
+class QuizQuestion:
+    """Class to represent a quiz question."""
+
+    id: str
+    text: str
+    answers: List[QuizAnswer]
+
+
+@dataclass
+class Quiz:
+    """Class to represent a quiz."""
+
+    id: str
+    questions: List[QuizQuestion]
+
+
+@dataclass
+class StudyPartnerUserData:
+    """Class to store user data during a session."""
+
+    ctx: Optional[JobContext] = None
+    flash_cards: List[FlashCard] = field(default_factory=list)
+    quizzes: List[Quiz] = field(default_factory=list)
+
+    def reset(self) -> None:
+        """Reset session data."""
+        # Keep flash cards and quizzes intact
+
+    def add_flash_card(self, question: str, answer: str) -> FlashCard:
+        """Add a new flash card to the collection."""
+        card = FlashCard(id=str(uuid.uuid4()), question=question, answer=answer)
+        self.flash_cards.append(card)
+        return card
+
+    def get_flash_card(self, card_id: str) -> Optional[FlashCard]:
+        """Get a flash card by ID."""
+        for card in self.flash_cards:
+            if card.id == card_id:
+                return card
+        return None
+
+    def flip_flash_card(self, card_id: str) -> Optional[FlashCard]:
+        """Flip a flash card by ID."""
+        card = self.get_flash_card(card_id)
+        if card:
+            card.is_flipped = not card.is_flipped
+            return card
+        return None
+
+    def add_quiz(self, questions: List[QuizQuestionDict]) -> Quiz:
+        """Add a new quiz to the collection."""
+        quiz_questions = []
+        for q in questions:
+            answers = []
+            for a in q["answers"]:
+                answers.append(
+                    QuizAnswer(
+                        id=str(uuid.uuid4()), text=a["text"], is_correct=a["is_correct"]
+                    )
+                )
+            quiz_questions.append(
+                QuizQuestion(id=str(uuid.uuid4()), text=q["text"], answers=answers)
+            )
+
+        quiz = Quiz(id=str(uuid.uuid4()), questions=quiz_questions)
+        self.quizzes.append(quiz)
+        return quiz
+
+    def get_quiz(self, quiz_id: str) -> Optional[Quiz]:
+        """Get a quiz by ID."""
+        for quiz in self.quizzes:
+            if quiz.id == quiz_id:
+                return quiz
+        return None
+
+    def check_quiz_answers(self, quiz_id: str, user_answers: dict) -> List[tuple]:
+        """Check user's quiz answers and return results."""
+        quiz = self.get_quiz(quiz_id)
+        if not quiz:
+            return []
+
+        results = []
+        for question in quiz.questions:
+            user_answer_id = user_answers.get(question.id)
+
+            # Find the selected answer and the correct answer
+            selected_answer = None
+            correct_answer = None
+
+            for answer in question.answers:
+                if answer.id == user_answer_id:
+                    selected_answer = answer
+                if answer.is_correct:
+                    correct_answer = answer
+
+            is_correct = selected_answer and selected_answer.is_correct
+            results.append((question, selected_answer, correct_answer, is_correct))
+
+        return results
 
 
 class StudyPartnerAgent(ScenarioAgent):
     def __init__(self) -> None:
         super().__init__(
-            instructions=get_prompts(
-                "Study Partner",
-                """
-Help users study effectively by answering quick concept questions, building simple study structure, and guiding short practice sessions.
-Use the study plan, flashcard, and quiz tools when the user wants structured revision or topic-based practice.
-Keep the interaction supportive, concise, and easy to follow.
-""",
-                """
-## Opening
-Always start with:
-"Hello! This is Sai, can you hear me okay?"
+            instructions="""
+                You are also a helpful, patient, and curious study partner for a student learning about the Fall of the Roman Empire.
+                Your primary goal is to foster deep understanding through guided discovery, dialogue, and repetition.
 
-## Flow
-- Answer quick concept questions directly when possible
-- Use the study plan tool for structured subject review
-- Use the flashcard tool for quick recall practice
-- Use the quiz tool for short mock drills
-- Ask only one follow-up question when a missing topic or subject blocks progress
+                Your responsibilities include:
+                    •	Explaining core topics related to the Fall of the Roman Empire, including:
+                    •	Economic factors (currency devaluation, overtaxation, wealth inequality)
+                    •	Military decline (barbarian invasions, loss of discipline, mercenary reliance)
+                    •	Political instability (succession crises, civil wars, corruption)
+                    •	Administrative challenges (East-West division, bureaucratic bloat)
+                    •	Social and cultural changes (spread of Christianity, shifting values)
+                    •	External pressures (Germanic tribes, Huns, Sassanid Persians)
+                    •	Environmental factors (climate change, plagues, agricultural decline)
+                    •	Using Socratic questioning to help the student reach answers themselves.
+                    •	Providing clear explanations only when necessary, then quizzing the student on similar historical questions.
+                    •	Alternating between roles: sometimes you ask questions, other times you answer.
+                    •	Prioritizing reinforcement through follow-up questions that vary in difficulty and context.
+                    •	Maintaining a friendly, encouraging tone that supports confidence and curiosity.
 
-## Teaching Style
-- Sound like a supportive tutor: upbeat, concise, and lightly conversational
-- Keep explanations short and clear
-- End with the next useful practice step only when it helps
+                Do not rush to give the answer. Instead, support reasoning, analytical thinking, and the development of historical understanding.
 
-## Fallback
-- If the requested subject or topic is not in the demo data, explain the nearest available option naturally
+                It's very important that you remember you are having this talk via voice. You should use clear language and be specific about dates, names, and events related to the Fall of Rome (roughly 376-476 CE, though the Eastern Roman Empire continued until 1453 CE).
 
-## Closing
-- When the learner seems done:
-    "Nice work — keep going, and you’ll build momentum fast."
-""",
-                """
-User: "Can you help me revise biology?"
-Assistant: "Absolutely — I can help with a study plan, flashcards, or a quick quiz. Which would you like?"
+                Always start answering a question by first asking questions, try to use the socratic method until it seems like you're both stuck.
 
-User: "Quiz me on photosynthesis"
-Assistant: "Sure — I can do that. Ready for the first question?"
+                FLASH CARDS FEATURE:4
+                You can create flash cards to help the user learn and remember important concepts. Use the create_flash_card function
+                to create a new flash card with a question and answer. The flash card will appear beside you in the UI.
 
-User: "Explain photosynthesis quickly"
-Assistant: "Photosynthesis is how plants use light, water, and carbon dioxide to make glucose and oxygen."
+                Be proactive in creating flash cards for important concepts, especially when:
+                - Teaching new vocabulary or terminology
+                - Explaining complex principles that are worth remembering
+                - Summarizing key points from a discussion
 
-User: "I don't know where to start"
-Assistant: "No problem — I can set up a short study plan first. What subject are you focusing on?"
-""",
-                """
-- Use the available tools before giving specific structured study content from demo data.
-- Prefer one tool at a time unless the user clearly asks for multiple things.
-""",
-            ),
+                For example, when explaining the causes of the Fall of Rome, you might create a flash card with:
+                Question: "What year marks the traditional end of the Western Roman Empire?"
+                Answer: "476 CE, when the last Roman Emperor Romulus Augustulus was deposed by Odoacer, the Germanic king."
+
+                Do not tell the user the answer before they look at it!
+
+                You can also flip flash cards to show the answer using the flip_flash_card function.
+
+                QUIZ FEATURE:
+                You can create multiple-choice quizzes to test the user's knowledge. Use the create_quiz function
+                to create a new quiz with questions and multiple-choice answers. The quiz will appear on the left side of the UI.
+
+                For each question, you should provide:
+                - A clear question text
+                - 3-5 answer options (one must be marked as correct)
+
+                Quizzes are great for:
+                - Testing comprehension after explaining a concept
+                - Reviewing previously covered material
+                - Preparing the user for a test or exam
+                - Breaking up longer learning sessions with interactive elements
+
+                When the user submits their answers, you'll automatically provide verbal feedback on their performance.
+                Don't just read back the questions and answers, give some color commentary that makes it interesting. Use names,
+                dates, or other interesting facts about the question to root it in memory.
+                For any incorrectly answered questions, flash cards will be created to help them study the correct answers.
+
+                Example format for creating a quiz:
+                ```python
+                await self.create_quiz([
+                    {
+                        "text": "What year marks the traditional end of the Western Roman Empire?",
+                        "answers": [
+                            {"text": "410 CE", "is_correct": False},
+                            {"text": "476 CE", "is_correct": True},
+                            {"text": "527 CE", "is_correct": False},
+                            {"text": "1453 CE", "is_correct": False}
+                        ]
+                    },
+                    {
+                        "text": "Who was the last Western Roman Emperor?",
+                        "answers": [
+                            {"text": "Constantine", "is_correct": False},
+                            {"text": "Theodosius", "is_correct": False},
+                            {"text": "Romulus Augustulus", "is_correct": True},
+                            {"text": "Justinian", "is_correct": False}
+                        ]
+                    }
+                ])
+                ```
+
+                Start the interaction with a short introduction, and let the student
+                guide their own learning journey!
+
+                Keep your speaking turns short, only one or two sentences. We want the
+                student to do most of the speaking.
+            """,
         )
 
-    @function_tool()
-    async def get_study_plan(
-        self, context: RunContext, subject: str = DEFAULT_SUBJECT
-    ) -> dict[str, Any]:
-        """Fetch a study plan before guiding the learner through a subject review session.
+    @function_tool
+    async def create_flash_card(
+        self, context: RunContext[StudyPartnerUserData], question: str, answer: str
+    ):
+        """Create a new flash card and display it to the user.
 
         Args:
-            subject: Subject name such as biology.
+            question: The question or front side of the flash card
+            answer: The answer or back side of the flash card
         """
+        userdata = context.userdata
+        card = userdata.add_flash_card(question, answer)
 
-        plan = STUDY_PLANS.get(normalize_lookup_key(subject))
-        if plan is None:
-            result = {
-                "found": False,
-                "requested_subject": subject,
-                "available_subjects": list(STUDY_PLANS.keys()),
-            }
-            await self.push_widget(
-                WidgetPayload(
-                    id="study-plan",
-                    type="study-plan",
-                    title="Study plan not found",
-                    status="warning",
-                    description="That subject is not available in the demo study planner.",
-                    data=rows_from_mapping(
-                        {
-                            "Requested": subject,
-                            "Available": result["available_subjects"],
-                        }
-                    ),
-                )
-            )
-            return result
+        # Get the room from the userdata
+        if not userdata.ctx or not userdata.ctx.room:
+            return "Created a flash card, but couldn't access the room to send it."
 
-        await self.push_widget(
-            WidgetPayload(
-                id="study-plan",
-                type="study-plan",
-                title=f"{plan['subject']} study plan",
-                status="success",
-                description="Structured review blocks for the next session.",
-                data=rows_from_mapping(
-                    {
-                        "Focus block 1": plan["focus_block_1"],
-                        "Focus block 2": plan["focus_block_2"],
-                        "Focus block 3": plan["focus_block_3"],
-                        "Break pattern": plan["break_pattern"],
-                    }
-                ),
-            )
+        room = userdata.ctx.room
+
+        # Get the first participant in the room (should be the client)
+        participants = room.remote_participants
+        if not participants:
+            return "Created a flash card, but no participants found to send it to."
+
+        # Get the first participant from the dictionary of remote participants
+        participant = next(iter(participants.values()), None)
+        if not participant:
+            return "Created a flash card, but couldn't get the first participant."
+        payload = {
+            "action": "show",
+            "id": card.id,
+            "question": card.question,
+            "answer": card.answer,
+            "index": len(userdata.flash_cards) - 1,
+        }
+
+        # Make sure payload is properly serialized
+        json_payload = json.dumps(payload)
+        logger.info(f"Sending flash card payload: {json_payload}")
+        await room.local_participant.perform_rpc(
+            destination_identity=participant.identity,
+            method="client.flashcard",
+            payload=json_payload,
         )
-        return plan
 
-    @function_tool()
-    async def review_flashcards(
-        self, context: RunContext, topic: str = DEFAULT_TOPIC
-    ) -> dict[str, Any]:
-        """Retrieve a flashcard set before quizzing or reviewing a topic.
+        return f"I've created a flash card with the question: '{question}'"
+
+    @function_tool
+    async def flip_flash_card(
+        self, context: RunContext[StudyPartnerUserData], card_id: str
+    ):
+        """Flip a flash card to show the answer or question.
 
         Args:
-            topic: Topic name such as photosynthesis.
+            card_id: The ID of the flash card to flip
         """
+        userdata = context.userdata
+        card = userdata.flip_flash_card(card_id)
 
-        flashcards = FLASHCARD_SETS.get(normalize_lookup_key(topic))
-        if flashcards is None:
-            result = {
-                "found": False,
-                "requested_topic": topic,
-                "available_topics": list(FLASHCARD_SETS.keys()),
-            }
-            await self.push_widget(
-                WidgetPayload(
-                    id="study-flashcards",
-                    type="flashcards",
-                    title="Flashcards not found",
-                    status="warning",
-                    description="That topic does not have a boilerplate flashcard set.",
-                    data=rows_from_mapping(
-                        {
-                            "Requested": topic,
-                            "Available": result["available_topics"],
-                        }
-                    ),
-                )
-            )
-            return result
+        if not card:
+            return f"Flash card with ID {card_id} not found."
 
-        await self.push_widget(
-            WidgetPayload(
-                id="study-flashcards",
-                type="flashcards",
-                title=f"{flashcards['topic']} flashcards",
-                status="success",
-                description="Quick recall prompts for revision.",
-                data=rows_from_mapping(
-                    {
-                        "Card 1": flashcards["cards"][0],
-                        "Card 2": flashcards["cards"][1],
-                        "Card 3": flashcards["cards"][2],
-                        "Memory tip": flashcards["memory_tip"],
-                    }
-                ),
-            )
+        # Get the room from the userdata
+        if not userdata.ctx or not userdata.ctx.room:
+            return "Flipped the flash card, but couldn't access the room to send it."
+
+        room = userdata.ctx.room
+
+        # Get the first participant in the room (should be the client)
+        participants = room.remote_participants
+        if not participants:
+            return "Flipped the flash card, but no participants found to send it to."
+
+        # Get the first participant from the dictionary of remote participants
+        participant = next(iter(participants.values()), None)
+        if not participant:
+            return "Flipped the flash card, but couldn't get the first participant."
+        payload = {"action": "flip", "id": card.id}
+
+        # Make sure payload is properly serialized
+        json_payload = json.dumps(payload)
+        logger.info(f"Sending flip card payload: {json_payload}")
+        await room.local_participant.perform_rpc(
+            destination_identity=participant.identity,
+            method="client.flashcard",
+            payload=json_payload,
         )
-        return flashcards
 
-    @function_tool()
-    async def create_practice_quiz(
-        self, context: RunContext, topic: str = DEFAULT_TOPIC
-    ) -> dict[str, Any]:
-        """Create a short practice quiz before running a mock study drill.
+        return f"I've flipped the flash card to show the {'answer' if card.is_flipped else 'question'}"
+
+    @function_tool
+    async def create_quiz(
+        self,
+        context: RunContext[StudyPartnerUserData],
+        questions: List[QuizQuestionDict],
+    ):
+        """Create a new quiz with multiple choice questions and display it to the user.
 
         Args:
-            topic: Topic name such as photosynthesis.
+            questions: A list of question objects. Each question object should have:
+                - text: The question text
+                - answers: A list of answer objects, each with:
+                    - text: The answer text
+                    - is_correct: Boolean indicating if this is the correct answer
         """
+        userdata = context.userdata
+        quiz = userdata.add_quiz(questions)
 
-        quiz = PRACTICE_QUIZZES.get(normalize_lookup_key(topic))
-        if quiz is None:
-            result = {
-                "found": False,
-                "requested_topic": topic,
-                "available_topics": list(PRACTICE_QUIZZES.keys()),
-            }
-            await self.push_widget(
-                WidgetPayload(
-                    id="study-quiz",
-                    type="quiz",
-                    title="Practice quiz not found",
-                    status="warning",
-                    description="That topic does not have a boilerplate quiz set.",
-                    data=rows_from_mapping(
-                        {
-                            "Requested": topic,
-                            "Available": result["available_topics"],
-                        }
-                    ),
-                )
-            )
-            return result
+        # Get the room from the userdata
+        if not userdata.ctx or not userdata.ctx.room:
+            return "Created a quiz, but couldn't access the room to send it."
 
-        await self.push_widget(
-            WidgetPayload(
-                id="study-quiz",
-                type="quiz",
-                title=f"{quiz['topic']} practice quiz",
-                status="success",
-                description="Three voice-friendly practice questions.",
-                data=rows_from_mapping(
-                    {
-                        "Question 1": quiz["question_1"],
-                        "Question 2": quiz["question_2"],
-                        "Question 3": quiz["question_3"],
-                        "Coaching tip": quiz["coaching_tip"],
-                    }
-                ),
+        room = userdata.ctx.room
+
+        # Get the first participant in the room (should be the client)
+        participants = room.remote_participants
+        if not participants:
+            return "Created a quiz, but no participants found to send it to."
+
+        # Get the first participant from the dictionary of remote participants
+        participant = next(iter(participants.values()), None)
+        if not participant:
+            return "Created a quiz, but couldn't get the first participant."
+
+        # Format questions for client
+        client_questions = []
+        for q in quiz.questions:
+            client_answers = []
+            for a in q.answers:
+                client_answers.append({"id": a.id, "text": a.text})
+            client_questions.append(
+                {"id": q.id, "text": q.text, "answers": client_answers}
             )
+
+        payload = {"action": "show", "id": quiz.id, "questions": client_questions}
+
+        # Make sure payload is properly serialized
+        json_payload = json.dumps(payload)
+        logger.info(f"Sending quiz payload: {json_payload}")
+        await room.local_participant.perform_rpc(
+            destination_identity=participant.identity,
+            method="client.quiz",
+            payload=json_payload,
         )
-        return quiz
+
+        return f"I've created a quiz with {len(questions)} questions. Please answer them when you're ready."
+
+    async def on_enter(self):
+        await asyncio.sleep(5)
+        self.session.generate_reply()

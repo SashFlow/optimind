@@ -1,38 +1,26 @@
 import logging
-from dataclasses import dataclass
-from typing import Optional
 
 from dotenv import load_dotenv
-from google.genai import types
 from livekit import rtc
 from livekit.agents import (
     NOT_GIVEN,
     AgentFalseInterruptionEvent,
     JobContext,
     JobProcess,
-    TurnHandlingOptions,
     WorkerOptions,
     cli,
     room_io,
 )
 from livekit.agents.voice import AgentSession
 from livekit.plugins import bey, google, noise_cancellation, silero
-from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
-from agents import getAgent, resolveRoomMetadata
-from agents.tools import end_call
+from agents import getAgent, getUserData, resolveRoomMetadata
+from agents.tools import end_call, transfer_to_human
 
 load_dotenv()
 
-logger = logging.getLogger("avatar")
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-
-@dataclass
-class UserData:
-    """Class to store user data during a session."""
-
-    ctx: Optional[JobContext] = None
 
 
 def prewarm(proc: JobProcess):
@@ -40,28 +28,18 @@ def prewarm(proc: JobProcess):
 
 
 async def entrypoint(ctx: JobContext):
-    dispatch_metadata = ctx.job.metadata or ctx.room.metadata
     ctx.log_context_fields = {
         "room": ctx.room.name,
     }
-    logger.info("Job metadata: %s", ctx.job.metadata)
-    logger.info("Room metadata: %s", ctx.room.metadata)
-    interaction_mode, _ = resolveRoomMetadata(dispatch_metadata)
-
-    session = AgentSession(
+    interaction_mode, _ = resolveRoomMetadata(ctx.job.metadata)
+    userdata = getUserData(ctx.job.metadata)
+    session = AgentSession[userdata](
         llm=google.realtime.RealtimeModel(
             model="gemini-live-2.5-flash-native-audio",
             vertexai=True,
-            # realtime_input_config=types.RealtimeInputConfig(
-            #     automatic_activity_detection=types.AutomaticActivityDetection(
-            #         disabled=True,
-            #     ),
-            # ),
             voice="Charon",
-            # input_audio_transcription=None,
         ),
-        tools=[google.tools.GoogleSearch(), end_call],
-        # turn_handling=TurnHandlingOptions(turn_detection=MultilingualModel()),
+        tools=[google.tools.GoogleSearch(), end_call, transfer_to_human],
         vad=ctx.proc.userdata["vad"],
         preemptive_generation=True,
     )
@@ -78,7 +56,7 @@ async def entrypoint(ctx: JobContext):
         session.generate_reply(instructions=ev.extra_instructions or NOT_GIVEN)
 
     await session.start(
-        agent=getAgent(dispatch_metadata),
+        agent=getAgent(ctx.job.metadata),
         room=ctx.room,
         room_options=room_io.RoomOptions(
             audio_input=room_io.AudioInputOptions(
