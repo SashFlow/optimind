@@ -3,4 +3,6 @@ export type ScenarioDetails = {
   title: string;
   description: string;
   highlights: string[];
+  firstTimeGuidance: string[];
+  suggestedQuestions: string[];
 };

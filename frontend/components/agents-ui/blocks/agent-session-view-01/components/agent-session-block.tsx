@@ -8,6 +8,7 @@ import {
   AgentControlBar,
   type AgentControlBarControls,
 } from '@/components/agents-ui/agent-control-bar';
+import { AgentDataPanel } from '@/components/agents-ui/agent-data-panel';
 import { Shimmer } from '@/components/ai-elements/shimmer';
 import { cn } from '@/lib/shadcn/utils';
 import { TileLayout } from './tile-view';
@@ -223,6 +224,9 @@ export function AgentSessionView_01({
           )}
         </AnimatePresence>
       </div>
+      {/* Agent data panel (widgets / flashcards / quiz) */}
+      <AgentDataPanel />
+
       {/* Tile layout */}
       <TileLayout
         chatOpen={chatOpen}

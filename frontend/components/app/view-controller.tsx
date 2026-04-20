@@ -30,9 +30,17 @@ const VIEW_MOTION_PROPS = {
 
 interface ViewControllerProps {
   appConfig: AppConfig;
+  scenario: {
+    sessionType: string[];
+    title: string;
+    description: string;
+    highlights: string[];
+    firstTimeGuidance: string[];
+    suggestedQuestions: string[];
+  };
 }
 
-export function ViewController({ appConfig }: ViewControllerProps) {
+export function ViewController({ appConfig, scenario }: ViewControllerProps) {
   const { isConnected, start } = useSessionContext();
   const { resolvedTheme } = useTheme();
 
@@ -43,6 +51,7 @@ export function ViewController({ appConfig }: ViewControllerProps) {
         <MotionWelcomeView
           key="welcome"
           {...VIEW_MOTION_PROPS}
+          scenario={scenario}
           startButtonText={appConfig.startButtonText}
           onStartCall={start}
         />

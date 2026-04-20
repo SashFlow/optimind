@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from site import USER_BASE
+from typing import TYPE_CHECKING, Optional
 
 from livekit.agents.voice import Agent
 
@@ -11,6 +11,9 @@ from .general_purpose import GeneralPurposeAgent
 from .medical_officer import MedicalOfficerAgent
 from .resturant_agent import ResturantAgent
 from .study_partner import StudyPartnerAgent, StudyPartnerUserData
+
+if TYPE_CHECKING:
+    from livekit.agents import JobContext
 
 logger = logging.getLogger(__name__)
 
@@ -23,22 +26,24 @@ AGENT_FACTORIES: dict[str, type[Agent]] = {
     "help-desk-partner": FrontDeskAgent,
 }
 
-USER_DATA_FACTORIES = {
-    "general-purpose": GeneralPurposeAgent,
-    "medical-officer": MedicalOfficerAgent,
-    "front-desk-agent": FrontDeskAgent,
-    "resturant-agent": ResturantAgent,
-    "study-partner": StudyPartnerUserData,
-    "help-desk-partner": FrontDeskAgent,
-}
 
+def getUserData(
+    metadata: str | None, ctx: Optional["JobContext"] = None
+) -> StudyPartnerUserData | None:
+    """Return an initialised userdata instance for the resolved scenario slug.
 
-def getUserData(metadata: str | None):
+    Only the study-partner scenario requires userdata (for flash card and quiz
+    state). All other scenarios return None, which is safe to pass to AgentSession.
+
+    Args:
+        metadata: Raw room metadata string used to resolve the scenario slug.
+        ctx: JobContext for the current session. Stored on StudyPartnerUserData so
+             its function tools can access the room for RPC calls.
+    """
     slug = extract_scenario_slug(metadata)
-    user_data_factory = USER_DATA_FACTORIES.get(slug)
-    if user_data_factory is None:
-        return None
-    return user_data_factory
+    if slug == "study-partner":
+        return StudyPartnerUserData(ctx=ctx)
+    return None
 
 
 def get_agent(metadata: str | None):

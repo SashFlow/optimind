@@ -6,6 +6,7 @@ import { TokenSource } from 'livekit-client';
 import { useSession } from '@livekit/components-react';
 import { ArrowLeftIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr';
 import type { AppConfig } from '@/app-config';
+import { AgentRpcProvider } from '@/components/agents-ui/agent-rpc-provider';
 import { AgentSessionProvider } from '@/components/agents-ui/agent-session-provider';
 import { StartAudioButton } from '@/components/agents-ui/start-audio-button';
 import { ViewController } from '@/components/app/view-controller';
@@ -72,25 +73,27 @@ export function App({ appConfig, scenarioType }: AppProps) {
   }
   return (
     <AgentSessionProvider session={session}>
-      <AppSetup />
-      <main className="grid h-svh grid-cols-1 place-content-center">
-        <ViewController appConfig={appConfig} />
-      </main>
-      <StartAudioButton label="Start" />
-      <Toaster
-        icons={{
-          warning: <WarningIcon weight="bold" />,
-        }}
-        position="top-center"
-        className="toaster group"
-        style={
-          {
-            '--normal-bg': 'var(--popover)',
-            '--normal-text': 'var(--popover-foreground)',
-            '--normal-border': 'var(--border)',
-          } as React.CSSProperties
-        }
-      />
+      <AgentRpcProvider>
+        <AppSetup />
+        <main className="grid h-svh grid-cols-1 place-content-center">
+          <ViewController appConfig={appConfig} scenario={scenario} />
+        </main>
+        <StartAudioButton label="Start" className="fixed right-6 bottom-6" variant="secondary" />
+        <Toaster
+          icons={{
+            warning: <WarningIcon weight="bold" />,
+          }}
+          position="top-center"
+          className="toaster group"
+          style={
+            {
+              '--normal-bg': 'var(--popover)',
+              '--normal-text': 'var(--popover-foreground)',
+              '--normal-border': 'var(--border)',
+            } as React.CSSProperties
+          }
+        />
+      </AgentRpcProvider>
     </AgentSessionProvider>
   );
 }

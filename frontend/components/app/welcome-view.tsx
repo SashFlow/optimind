@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import type { ScenarioDetails } from '@/types';
 
 function WelcomeImage() {
   return (
@@ -21,26 +22,64 @@ function WelcomeImage() {
 interface WelcomeViewProps {
   startButtonText: string;
   onStartCall: () => void;
+  scenario: ScenarioDetails;
 }
 
 export const WelcomeView = ({
   startButtonText,
   onStartCall,
+  scenario,
   ref,
 }: React.ComponentProps<'div'> & WelcomeViewProps) => {
   return (
     <div ref={ref}>
-      <section className="bg-background flex flex-col items-center justify-center text-center">
+      <section className="bg-background mx-auto flex max-w-5xl flex-col items-center justify-center px-6 py-10 text-center md:px-10">
         <WelcomeImage />
 
-        <p className="text-foreground max-w-prose pt-1 leading-6 font-medium">
-          Chat live with your voice AI agent
+        <p className="text-foreground text-3xl font-semibold tracking-tight">{scenario.title}</p>
+        <p className="text-muted-foreground max-w-2xl pt-3 text-sm leading-6 md:text-base">
+          {scenario.description}
         </p>
+
+        <div className="mt-8 grid w-full gap-4 text-left md:grid-cols-3">
+          <div className="border-border/70 bg-card rounded-2xl border p-6 shadow-sm">
+            <h2 className="text-sm font-semibold tracking-wide uppercase">Capabilities</h2>
+            <ul className="mt-4 space-y-3 text-sm leading-6">
+              {scenario.highlights.map((highlight) => (
+                <li key={highlight} className="text-muted-foreground">
+                  {highlight}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="border-border/70 bg-card rounded-2xl border p-6 shadow-sm">
+            <h2 className="text-sm font-semibold tracking-wide uppercase">How to use it</h2>
+            <ul className="mt-4 space-y-3 text-sm leading-6">
+              {scenario.firstTimeGuidance.map((instruction) => (
+                <li key={instruction} className="text-muted-foreground">
+                  {instruction}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="border-border/70 bg-card rounded-2xl border p-6 shadow-sm">
+            <h2 className="text-sm font-semibold tracking-wide uppercase">Suggested questions</h2>
+            <ul className="mt-4 space-y-3 text-sm leading-6">
+              {scenario.suggestedQuestions.map((question) => (
+                <li key={question} className="text-muted-foreground">
+                  “{question}”
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
 
         <Button
           size="lg"
           onClick={onStartCall}
-          className="mt-6 w-64 rounded-full font-mono text-xs font-bold tracking-wider uppercase"
+          className="mt-8 w-full max-w-sm rounded-full font-mono text-xs font-bold tracking-wider uppercase"
         >
           {startButtonText}
         </Button>

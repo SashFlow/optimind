@@ -32,8 +32,8 @@ async def entrypoint(ctx: JobContext):
         "room": ctx.room.name,
     }
     interaction_mode, _ = resolveRoomMetadata(ctx.job.metadata)
-    userdata = getUserData(ctx.job.metadata)
-    session = AgentSession[userdata](
+    userdata = getUserData(ctx.job.metadata, ctx)
+    session = AgentSession(
         llm=google.realtime.RealtimeModel(
             model="gemini-live-2.5-flash-native-audio",
             vertexai=True,
@@ -42,6 +42,7 @@ async def entrypoint(ctx: JobContext):
         tools=[google.tools.GoogleSearch(), end_call, transfer_to_human],
         vad=ctx.proc.userdata["vad"],
         preemptive_generation=True,
+        userdata=userdata,
     )
     if interaction_mode == "video":
         avatar = bey.AvatarSession(
