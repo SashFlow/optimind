@@ -1,7 +1,7 @@
 'use client';
 
 import type { ComponentProps, HTMLAttributes, ReactElement } from 'react';
-import { createContext, memo, useContext, useEffect, useState } from 'react';
+import { createContext, memo, useContext, useState } from 'react';
 import type { FileUIPart, UIMessage } from 'ai';
 import { ChevronLeftIcon, ChevronRightIcon, PaperclipIcon, XIcon } from 'lucide-react';
 import { Streamdown } from 'streamdown';
@@ -96,7 +96,7 @@ type MessageBranchContextType = {
 
 const MessageBranchContext = createContext<MessageBranchContextType | null>(null);
 
-const useMessageBranch = () => {
+export const useMessageBranch = () => {
   const context = useContext(MessageBranchContext);
 
   if (!context) {
@@ -152,31 +152,6 @@ export const MessageBranch = ({
 };
 
 export type MessageBranchContentProps = HTMLAttributes<HTMLDivElement>;
-
-export const MessageBranchContent = ({ children, ...props }: MessageBranchContentProps) => {
-  const { currentBranch, setBranches, branches } = useMessageBranch();
-  const childrenArray = Array.isArray(children) ? children : [children];
-
-  // Use useEffect to update branches when they change
-  useEffect(() => {
-    if (branches.length !== childrenArray.length) {
-      setBranches(childrenArray);
-    }
-  }, [childrenArray, branches, setBranches]);
-
-  return childrenArray.map((branch, index) => (
-    <div
-      className={cn(
-        'grid gap-2 overflow-hidden [&>div]:pb-0',
-        index === currentBranch ? 'block' : 'hidden'
-      )}
-      key={branch.key}
-      {...props}
-    >
-      {branch}
-    </div>
-  ));
-};
 
 export type MessageBranchSelectorProps = HTMLAttributes<HTMLDivElement> & {
   from: UIMessage['role'];
