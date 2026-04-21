@@ -12,7 +12,7 @@ from livekit.agents import (
     room_io,
 )
 from livekit.agents.voice import AgentSession
-from livekit.plugins import bey, google, noise_cancellation, silero
+from livekit.plugins import bey, google, noise_cancellation, silero, tavus
 
 from agents import getAgent, getUserData, resolveRoomMetadata
 from agents.tools import end_call, transfer_to_human
@@ -45,10 +45,7 @@ async def entrypoint(ctx: JobContext):
         userdata=userdata,
     )
     if interaction_mode == "video":
-        avatar = bey.AvatarSession(
-            avatar_id="2ed7477f-3961-4ce1-b331-5e4530c55a57",
-        )
-
+        avatar = tavus.AvatarSession(replica_id="ra066ab28864", persona_id="p2fbd605")
         await avatar.start(session, room=ctx.room)
 
     @session.on("agent_false_interruption")

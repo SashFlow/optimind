@@ -21,23 +21,25 @@ export const scenarios = {
   },
   'medical-officer': {
     sessionType: ['audio', 'avatar'],
-    title: 'Medical Officer',
+    title: 'Medical Consultation Assistant',
     description:
-      'Support patient intake, appointment coordination, symptom collection, and general healthcare communication.',
+      'Support broad medical consultations with symptom intake, diagnostic guidance, care-setting recommendations, and cautious visual review.',
     highlights: [
-      'Collect patient details and reason for visit',
-      'Guide callers through appointment scheduling',
-      'Answer common healthcare workflow questions',
-      'Escalate urgent cases to the right team',
+      'Organize symptom intake across common body systems',
+      'Offer cautious diagnostic support without claiming certainty',
+      'Help users compare home care, clinic, urgent care, and emergency needs',
+      'Use live video carefully for visible concerns such as rash, swelling, or breathing effort',
     ],
     firstTimeGuidance: [
-      'Use this bot for routine clinic support such as symptom check-ins, appointment details.',
-      'It can help with safe next-step guidance for common concerns, but it does not replace a clinician or emergency care.',
+      'Use this bot for general medical consultations when you want help describing symptoms, understanding likely urgency, or preparing for a clinician visit.',
+      'It can discuss common symptom categories, likely care settings, and red flags, but it does not replace a clinician or emergency care.',
       'In video sessions, it can also give cautious guidance about visible concerns without claiming a diagnosis from appearance alone.',
     ],
     suggestedQuestions: [
-      'I have had a migraine since morning. What should I do next?',
-      'Can you help with general guidance for a visible rash?',
+      'I have had fever, cough, and body aches for two days. What should I watch for?',
+      'Does this stomach pain sound like urgent care or something I can monitor?',
+      'Can you help me explain these symptoms clearly before I speak to a doctor?',
+      'Can you give cautious guidance for this visible rash?',
     ],
   },
   'front-desk-agent': {

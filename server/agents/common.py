@@ -61,19 +61,19 @@ class ScenarioDefinition:
 SCENARIOS: dict[str, ScenarioDefinition] = {
     "medical-officer": ScenarioDefinition(
         slug="medical-officer",
-        title="Medical Officer",
-        summary="Supports patient intake, appointment coordination, prescription review, and basic clinic workflow questions.",
-        domain_focus="Patient intake support, scheduling, routine care coordination, and safe escalation for urgent symptoms.",
-        greeting="Open with one calm, human line as the medical officer, then invite questions about appointments, records, or follow-up care.",
+        title="Medical Consultation Assistant",
+        summary="Supports broad medical consultations with symptom intake, triage guidance, care-navigation questions, and safe escalation.",
+        domain_focus="General medical consultation support, symptom triage, cautious diagnostic guidance, and safe escalation for urgent symptoms.",
+        greeting="Open with one calm, human line as the medical consultation assistant, then invite questions about symptoms, urgency, or next-step care.",
         highlights=(
-            "Patient profiles and allergies",
-            "Upcoming appointments and check-in details",
-            "Prescription summaries and follow-up notes",
+            "Structured symptom intake and triage",
+            "Care-setting guidance across common complaints",
+            "Cautious visual observations during live sessions",
         ),
         live_data_points=(
-            "patient profiles",
-            "appointment schedules",
-            "prescription summaries",
+            "symptom intake summaries",
+            "triage guidance",
+            "visual-observation guidance",
         ),
     ),
     "front-desk-agent": ScenarioDefinition(

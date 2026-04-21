@@ -47,19 +47,19 @@ MENU_SHOWCASE = {
             "name": "Truffle mushroom risotto",
             "category": "Main",
             "price": "INR 680",
-            "image_url": "https://picsum.photos/seed/risotto/640/480",
+            "image_url": "https://pixabay.com/photos/champignon-edible-wild-parmesan-4766607",
         },
         {
             "name": "Charred broccoli salad",
             "category": "Starter",
             "price": "INR 420",
-            "image_url": "https://picsum.photos/seed/broccoli-salad/640/480",
+            "image_url": "https://pixabay.com/photos/salad-food-meal-dish-healthy-8274421/",
         },
         {
             "name": "Chocolate hazelnut tart",
             "category": "Dessert",
             "price": "INR 360",
-            "image_url": "https://picsum.photos/seed/hazelnut-tart/640/480",
+            "image_url": "https://pixabay.com/photos/desserts-dessert-patisserie-tart-2669093/",
         },
     ),
     "drinks": (
@@ -67,13 +67,13 @@ MENU_SHOWCASE = {
             "name": "Citrus soda",
             "category": "Beverage",
             "price": "INR 180",
-            "image_url": "https://picsum.photos/seed/citrus-soda/640/480",
+            "image_url": "https://pixabay.com/photos/lime-drink-glass-club-soda-907124/",
         },
         {
             "name": "Masala buttermilk",
             "category": "Beverage",
             "price": "INR 150",
-            "image_url": "https://picsum.photos/seed/buttermilk/640/480",
+            "image_url": "https://pixabay.com/photos/cold-buttermilk-soup-dessert-food-1475009/",
         },
     ),
 }
@@ -344,7 +344,9 @@ Assistant: "I can share the current reservation details, but booking changes wou
             result = {
                 "found": False,
                 "requested_guest": guest_name,
-                "available_guests": [entry["guest_name"] for entry in RESERVATIONS.values()],
+                "available_guests": [
+                    entry["guest_name"] for entry in RESERVATIONS.values()
+                ],
             }
             await self.push_widget(
                 WidgetPayload(
@@ -401,9 +403,10 @@ Assistant: "I can share the current reservation details, but booking changes wou
         """
 
         normalized_guest = normalize_lookup_key(guest_name)
-        order_number = max(
-            int(entry["order_id"].split("-")[1]) for entry in ORDER_STATUS.values()
-        ) + 1
+        order_number = (
+            max(int(entry["order_id"].split("-")[1]) for entry in ORDER_STATUS.values())
+            + 1
+        )
         order_id = f"ORD-{order_number}"
         order = {
             "order_id": order_id,

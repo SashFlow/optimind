@@ -1,3 +1,6 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import type { ScenarioDetails } from '@/types';
 
@@ -31,6 +34,7 @@ export const WelcomeView = ({
   scenario,
   ref,
 }: React.ComponentProps<'div'> & WelcomeViewProps) => {
+  const router = useRouter();
   return (
     <div ref={ref}>
       <section className="bg-background mx-auto flex max-w-5xl flex-col items-center justify-center px-6 py-10 text-center md:px-10">
@@ -76,13 +80,23 @@ export const WelcomeView = ({
           </div>
         </div>
 
-        <Button
-          size="lg"
-          onClick={onStartCall}
-          className="mt-8 w-full max-w-sm rounded-full font-mono text-xs font-bold tracking-wider uppercase"
-        >
-          {startButtonText}
-        </Button>
+        <div className="flex w-full justify-between gap-2">
+          <Button
+            size="lg"
+            onClick={() => router.push('/')}
+            variant={'secondary'}
+            className="mt-8 w-full max-w-sm rounded-full font-mono text-xs font-bold tracking-wider uppercase"
+          >
+            Go Back
+          </Button>
+          <Button
+            size="lg"
+            onClick={onStartCall}
+            className="mt-8 w-full max-w-sm rounded-full font-mono text-xs font-bold tracking-wider uppercase"
+          >
+            {startButtonText}
+          </Button>
+        </div>
       </section>
     </div>
   );

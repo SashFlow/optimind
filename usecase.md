@@ -4,10 +4,11 @@ Frontdesk
 - information about the service
 
 
-MedicalOfficer
-- how are you feeling 
-- help with diagnostices
-- provide help based on live video stream
+MedicalConsultationAssistant
+- how are you feeling
+- help with diagnostics support across general medical consultations
+- guide likely care setting, red flags, and next-step questions
+- provide cautious help based on live video stream
 
 
 Resturant_Agent

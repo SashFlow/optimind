@@ -407,7 +407,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "google-genai" },
     { name = "livekit" },
-    { name = "livekit-agents", extra = ["google", "images", "openai"] },
+    { name = "livekit-agents", extra = ["google", "images", "openai", "tavus"] },
     { name = "livekit-plugins-bey" },
     { name = "livekit-plugins-google" },
     { name = "livekit-plugins-noise-cancellation" },
@@ -422,7 +422,7 @@ dependencies = [
 requires-dist = [
     { name = "google-genai", specifier = ">=1.73.1" },
     { name = "livekit", specifier = ">=1.1.5" },
-    { name = "livekit-agents", extras = ["google", "images", "openai"], specifier = ">=1.5.4" },
+    { name = "livekit-agents", extras = ["google", "images", "openai", "tavus"], specifier = ">=1.5.4" },
     { name = "livekit-plugins-bey", specifier = ">=1.5.4" },
     { name = "livekit-plugins-google", specifier = ">=1.5.4" },
     { name = "livekit-plugins-noise-cancellation", specifier = ">=0.2.5" },
@@ -1000,6 +1000,9 @@ images = [
 openai = [
     { name = "livekit-plugins-openai" },
 ]
+tavus = [
+    { name = "livekit-plugins-tavus" },
+]
 
 [[package]]
 name = "livekit-api"
@@ -1112,6 +1115,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/e3/0f/a6bbe128b38c99c289b79e7fa8e011bcf6346a0e7e2e7dd32398043f6b81/livekit_plugins_silero-1.5.4.tar.gz", hash = "sha256:a0417ccec1792b826cb91f5fd99eb76bdeb457f0401bec578ead7affde51d845", size = 1955608, upload-time = "2026-04-16T04:52:32.1Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/5f/a0/53e03fe0f44d0a95eb1ef06f3b1fabb7202b3b589ac0c0eb6f3567318e84/livekit_plugins_silero-1.5.4-py3-none-any.whl", hash = "sha256:3766d8e03f232045b0f617bd22da4ac455f432cc9be0ce4b883db69f703c0cb7", size = 3903690, upload-time = "2026-04-16T04:52:30.336Z" },
+]
+
+[[package]]
+name = "livekit-plugins-tavus"
+version = "1.5.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "livekit-agents" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b2/5b/227356b919cbba6ea8760c5da4c6ac368ecee8e7ea2d1ae06a6bcf3dd185/livekit_plugins_tavus-1.5.4.tar.gz", hash = "sha256:622d5d76bcf344f4e985930f2e47aa8f77e1be609128bf14ab957c1d125d6dd0", size = 5631, upload-time = "2026-04-16T04:52:52.41Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c8/5d/86cd25c1efcdd9a4e987f7fd55a741729917f0a87d340050f354e92d37fb/livekit_plugins_tavus-1.5.4-py3-none-any.whl", hash = "sha256:70824eb2ce45037345bc73dd6514c2776ae8b711716e9454f52fabb9e5a4c67f", size = 6152, upload-time = "2026-04-16T04:52:51.392Z" },
 ]
 
 [[package]]

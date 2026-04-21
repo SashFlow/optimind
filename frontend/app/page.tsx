@@ -25,12 +25,6 @@ const sections = [
     title: 'Audio',
     items: [
       {
-        title: 'Medical Officer',
-        href: '/audio/medical-officer',
-        description:
-          'Handle patient intake, appointment coordination, and basic healthcare support conversations.',
-      },
-      {
         title: 'Front Desk Agent',
         href: '/audio/front-desk-agent',
         description:
@@ -42,30 +36,36 @@ const sections = [
         description:
           'Manage reservations, menu questions, order support, and restaurant guest interactions.',
       },
-    ],
-  },
-  {
-    title: 'Avatar',
-    items: [
       {
-        title: 'Study Partner',
-        href: '/avatar/study-partner',
+        title: 'Medical Consultation Assistant',
+        href: '/audio/medical-officer',
         description:
-          'An interactive learning companion for practice sessions, explanations, and study planning.',
+          'Guide general medical consultations with symptom intake, triage support, care-navigation, and cautious video-based observations.',
       },
     ],
   },
-  {
-    title: 'Inbound/Outbound Calls',
-    items: [
-      {
-        title: 'AI Calling/Answering Agent',
-        href: '/calls/inbound-outbound',
-        description:
-          'Guide callers through smart voice menus, routing, and automated call handling flows.',
-      },
-    ],
-  },
+  // {
+  //   title: 'Avatar',
+  //   items: [
+  //     {
+  //       title: 'Study Partner',
+  //       href: '/avatar/study-partner',
+  //       description:
+  //         'An interactive learning companion for practice sessions, explanations, and study planning.',
+  //     },
+  //   ],
+  // },
+  // {
+  //   title: 'Inbound/Outbound Calls',
+  //   items: [
+  //     {
+  //       title: 'AI Calling/Answering Agent',
+  //       href: '/calls/inbound-outbound',
+  //       description:
+  //         'Guide callers through smart voice menus, routing, and automated call handling flows.',
+  //     },
+  //   ],
+  // },
 ];
 
 export default function Page() {
