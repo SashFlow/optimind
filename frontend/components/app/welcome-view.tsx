@@ -80,7 +80,7 @@ export const WelcomeView = ({
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row w-full justify-between gap-2">
+        <div className="flex w-full flex-col justify-between gap-2 md:flex-row">
           <Button
             size="lg"
             onClick={onStartCall}
@@ -96,7 +96,6 @@ export const WelcomeView = ({
           >
             Go Back
           </Button>
-
         </div>
       </section>
     </div>
