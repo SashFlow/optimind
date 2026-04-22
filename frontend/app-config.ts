@@ -33,9 +33,9 @@ export interface AppConfig {
 }
 
 export const APP_CONFIG_DEFAULTS: AppConfig = {
-  companyName: 'LiveKit',
-  pageTitle: 'LiveKit Voice Agent',
-  pageDescription: 'A voice agent built with LiveKit',
+  companyName: 'Sashflow',
+  pageTitle: 'Sashflow Voice Agent',
+  pageDescription: 'A voice agent built with Sashflow',
 
   supportsChatInput: true,
   supportsVideoInput: true,
@@ -67,6 +67,5 @@ export const APP_CONFIG_DEFAULTS: AppConfig = {
   // agent dispatch configuration
   agentName: process.env.AGENT_NAME ?? undefined,
 
-  // LiveKit Cloud Sandbox configuration
   sandboxId: undefined,
 };
