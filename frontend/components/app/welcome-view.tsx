@@ -80,7 +80,14 @@ export const WelcomeView = ({
           </div>
         </div>
 
-        <div className="flex w-full justify-between gap-2">
+        <div className="flex flex-col md:flex-row w-full justify-between gap-2">
+          <Button
+            size="lg"
+            onClick={onStartCall}
+            className="mt-8 w-full max-w-sm rounded-full font-mono text-xs font-bold tracking-wider uppercase"
+          >
+            {startButtonText}
+          </Button>
           <Button
             size="lg"
             onClick={() => router.push('/')}
@@ -89,13 +96,7 @@ export const WelcomeView = ({
           >
             Go Back
           </Button>
-          <Button
-            size="lg"
-            onClick={onStartCall}
-            className="mt-8 w-full max-w-sm rounded-full font-mono text-xs font-bold tracking-wider uppercase"
-          >
-            {startButtonText}
-          </Button>
+
         </div>
       </section>
     </div>

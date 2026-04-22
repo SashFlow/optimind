@@ -75,7 +75,7 @@ export function App({ appConfig, scenarioType }: AppProps) {
     <AgentSessionProvider session={session}>
       <AgentRpcProvider>
         <AppSetup />
-        <main className="grid h-svh grid-cols-1 place-content-center">
+        <main className="grid h-full grid-cols-1 place-content-center">
           <ViewController appConfig={appConfig} scenario={scenario} />
         </main>
         <StartAudioButton label="Start" className="fixed right-6 bottom-6" variant="secondary" />

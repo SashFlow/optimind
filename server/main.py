@@ -5,9 +5,9 @@ from livekit import rtc
 from livekit.agents import (
     NOT_GIVEN,
     AgentFalseInterruptionEvent,
+    AgentServer,
     JobContext,
     JobProcess,
-    WorkerOptions,
     cli,
     room_io,
 )
@@ -22,11 +22,17 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+server = AgentServer()
+
 
 def prewarm(proc: JobProcess):
     proc.userdata["vad"] = silero.VAD.load()
 
 
+server.setup_fnc = prewarm
+
+
+@server.rtc_session(agent_name="demo-agent")
 async def entrypoint(ctx: JobContext):
     ctx.log_context_fields = {
         "room": ctx.room.name,
@@ -69,8 +75,4 @@ async def entrypoint(ctx: JobContext):
 
 
 if __name__ == "__main__":
-    cli.run_app(
-        WorkerOptions(
-            entrypoint_fnc=entrypoint, prewarm_fnc=prewarm, agent_name="demo-agent"
-        )
-    )
+    cli.run_app(server)
