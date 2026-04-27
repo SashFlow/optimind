@@ -45,19 +45,21 @@ export const WelcomeView = ({
           {scenario.description}
         </p>
 
-        <div className="mt-8 grid w-full gap-4 text-left md:grid-cols-3">
+        <div className="mt-8 grid w-full gap-4 text-left md:grid-cols-1">
           <div className="border-border/70 bg-card rounded-2xl border p-6 shadow-sm">
-            <h2 className="text-sm font-semibold tracking-wide uppercase">Capabilities</h2>
+            <h2 className="text-center text-sm font-semibold tracking-wide uppercase">
+              Capabilities
+            </h2>
             <ul className="mt-4 space-y-3 text-sm leading-6">
               {scenario.highlights.map((highlight) => (
-                <li key={highlight} className="text-muted-foreground">
+                <li key={highlight} className="text-muted-foreground text-center">
                   {highlight}
                 </li>
               ))}
             </ul>
           </div>
 
-          <div className="border-border/70 bg-card rounded-2xl border p-6 shadow-sm">
+          {/*<div className="border-border/70 bg-card rounded-2xl border p-6 shadow-sm">
             <h2 className="text-sm font-semibold tracking-wide uppercase">How to use it</h2>
             <ul className="mt-4 space-y-3 text-sm leading-6">
               {scenario.firstTimeGuidance.map((instruction) => (
@@ -77,7 +79,7 @@ export const WelcomeView = ({
                 </li>
               ))}
             </ul>
-          </div>
+          </div>*/}
         </div>
 
         <div className="flex w-full flex-col justify-between gap-2 md:flex-row">
