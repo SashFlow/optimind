@@ -422,7 +422,7 @@ dependencies = [
 requires-dist = [
     { name = "google-genai", specifier = ">=1.73.1" },
     { name = "livekit", specifier = ">=1.1.5" },
-    { name = "livekit-agents", extras = ["anam", "google", "images", "openai", "tavus"], specifier = "~=1.4" },
+    { name = "livekit-agents", extras = ["anam", "google", "images", "openai", "tavus"], specifier = "~=1.5" },
     { name = "livekit-plugins-bey", specifier = ">=1.5.4" },
     { name = "livekit-plugins-google", specifier = ">=1.5.4" },
     { name = "livekit-plugins-noise-cancellation", specifier = ">=0.2.5" },
