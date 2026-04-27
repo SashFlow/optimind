@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const sections = [
   {
-    title: 'Default',
+    title: 'Use Cases',
     items: [
       {
         title: 'General Purpose (Audio)',
@@ -25,23 +25,6 @@ const sections = [
         description:
           'A general purpose Avatar Assistant for handling a variety of interactions across different scenarios.',
       },
-    ],
-  },
-  {
-    title: 'Audio',
-    items: [
-      {
-        title: 'Front Desk Agent',
-        href: '/audio/front-desk-agent',
-        description:
-          'Assist callers with greetings, bookings, visitor questions, and front desk workflows.',
-      },
-      {
-        title: 'Resturant Agent',
-        href: '/audio/resturant-agent',
-        description:
-          'Manage reservations, menu questions, order support, and restaurant guest interactions.',
-      },
       {
         title: 'Medical Consultation Assistant',
         href: '/audio/medical-officer',
@@ -50,6 +33,29 @@ const sections = [
       },
     ],
   },
+  // {
+  //   title: 'Audio',
+  //   items: [
+  //     {
+  //       title: 'Front Desk Agent',
+  //       href: '/audio/front-desk-agent',
+  //       description:
+  //         'Assist callers with greetings, bookings, visitor questions, and front desk workflows.',
+  //     },
+  //     {
+  //       title: 'Resturant Agent',
+  //       href: '/audio/resturant-agent',
+  //       description:
+  //         'Manage reservations, menu questions, order support, and restaurant guest interactions.',
+  //     },
+  //     {
+  //       title: 'Medical Consultation Assistant',
+  //       href: '/audio/medical-officer',
+  //       description:
+  //         'Guide general medical consultations with symptom intake, triage support, care-navigation, and cautious video-based observations.',
+  //     },
+  //   ],
+  // },
   // {
   //   title: 'Avatar',
   //   items: [
