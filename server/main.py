@@ -41,9 +41,6 @@ async def entrypoint(ctx: JobContext):
     interaction_mode, _ = resolveRoomMetadata(ctx.job.metadata)
     userdata = getUserData(ctx.job.metadata, ctx)
 
-    # Connect before starting session/avatar to avoid early RPC calls timing out.
-    await ctx.connect()
-
     session = AgentSession(
         llm=google.realtime.RealtimeModel(
             model="gemini-live-2.5-flash-native-audio",
@@ -113,6 +110,7 @@ async def entrypoint(ctx: JobContext):
         room=ctx.room,
         room_options=room_options,
     )
+    await ctx.connect()
 
 
 if __name__ == "__main__":
