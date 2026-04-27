@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { BookOpenCheck, BriefcaseMedicalIcon, MicIcon, User2Icon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const sections = [
@@ -10,24 +11,28 @@ const sections = [
       {
         title: 'General Purpose (Audio)',
         href: '/audio/general-purpose',
+        icon: MicIcon,
         description:
           'A general purpose Voice Assistant for handling a variety of interactions across different scenarios.',
       },
       {
         title: 'Medical Examination (Avatar)',
         href: '/avatar/medical-examination',
+        icon: BookOpenCheck,
         description:
           'A Medical Examination Avatar Assistant for handling medical consultation interactions.',
       },
       {
         title: 'General Purpose (Avatar)',
         href: '/avatar/general-purpose',
+        icon: User2Icon,
         description:
           'A general purpose Avatar Assistant for handling a variety of interactions across different scenarios.',
       },
       {
         title: 'Medical Consultation Assistant',
         href: '/audio/medical-officer',
+        icon: BriefcaseMedicalIcon,
         description:
           'Guide general medical consultations with symptom intake, triage support, care-navigation, and cautious video-based observations.',
       },
@@ -101,7 +106,10 @@ export default function Page() {
               {section.items.map((item) => (
                 <Link key={item.href} href={item.href} className="group block">
                   <Card className="border-border/70 h-full transition-all duration-200 group-hover:-translate-y-1 group-hover:shadow-md">
-                    <CardHeader>
+                    <CardHeader className="flex items-center gap-4">
+                      <div className="flex items-center rounded-lg bg-slate-200 p-2">
+                        <item.icon className="h-4 w-4" />
+                      </div>
                       <CardTitle className="text-lg">{item.title}</CardTitle>
                     </CardHeader>
                     <CardContent>
