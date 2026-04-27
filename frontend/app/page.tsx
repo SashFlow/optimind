@@ -108,7 +108,7 @@ export default function Page() {
                   <Card className="border-border/70 h-full transition-all duration-200 group-hover:-translate-y-1 group-hover:shadow-md">
                     <CardHeader className="flex items-center gap-4">
                       <div className="flex items-center rounded-lg bg-slate-200 p-2">
-                        <item.icon className="h-4 w-4" />
+                        <item.icon className="h-4 w-4 text-zinc-950" />
                       </div>
                       <CardTitle className="text-lg">{item.title}</CardTitle>
                     </CardHeader>
