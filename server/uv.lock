@@ -407,7 +407,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "google-genai" },
     { name = "livekit" },
-    { name = "livekit-agents", extra = ["google", "images", "openai", "tavus"] },
+    { name = "livekit-agents", extra = ["anam", "google", "images", "openai", "tavus"] },
     { name = "livekit-plugins-bey" },
     { name = "livekit-plugins-google" },
     { name = "livekit-plugins-noise-cancellation" },
@@ -422,7 +422,7 @@ dependencies = [
 requires-dist = [
     { name = "google-genai", specifier = ">=1.73.1" },
     { name = "livekit", specifier = ">=1.1.5" },
-    { name = "livekit-agents", extras = ["google", "images", "openai", "tavus"], specifier = ">=1.5.4" },
+    { name = "livekit-agents", extras = ["anam", "google", "images", "openai", "tavus"], specifier = "~=1.4" },
     { name = "livekit-plugins-bey", specifier = ">=1.5.4" },
     { name = "livekit-plugins-google", specifier = ">=1.5.4" },
     { name = "livekit-plugins-noise-cancellation", specifier = ">=0.2.5" },
@@ -988,6 +988,9 @@ wheels = [
 ]
 
 [package.optional-dependencies]
+anam = [
+    { name = "livekit-plugins-anam" },
+]
 codecs = [
     { name = "numpy" },
 ]
@@ -1045,6 +1048,18 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/72/08/93ed14e757f3bb3d22c40e11900ea2815883b7beb331fe758c8d40ea1dd0/livekit_blingfire-1.1.0-cp314-cp314t-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:20b95b2c15c4a1af4e68c1aa7d885bf295f89ee6eb5c1a1fdfa315a51795b30d", size = 170081, upload-time = "2025-12-16T00:48:31.268Z" },
     { url = "https://files.pythonhosted.org/packages/0f/6d/b2a23cafabf55561c463490b3a87e323640259ae340e6db26bb71e0fa26d/livekit_blingfire-1.1.0-cp314-cp314t-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:6c13ef26e5234674ac353b7cfaadeb23468e951eb07461b6b6c77f79cd5ff763", size = 176755, upload-time = "2025-12-16T00:48:32.294Z" },
     { url = "https://files.pythonhosted.org/packages/60/93/c00c175d2187160bdb2dac6b338203d51396307dfce23f03defb3b5e5572/livekit_blingfire-1.1.0-cp314-cp314t-win_amd64.whl", hash = "sha256:c91b2315e0497383384304d33554d70b8a63dec5ad96cd43437c67f4172077cf", size = 141072, upload-time = "2025-12-16T00:48:33.423Z" },
+]
+
+[[package]]
+name = "livekit-plugins-anam"
+version = "1.5.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "livekit-agents" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/46/1e/31ed140851d41929b361d621bd2dfca4802897a76679ad6362d06ddaa2ea/livekit_plugins_anam-1.5.4.tar.gz", hash = "sha256:baee788a1dbfea2fc0789bceb8a198ccd118a399ed6b3e1b48a5522712dfa587", size = 6213, upload-time = "2026-04-16T04:50:42.399Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ae/64/86c3a997c746b34b73d38ebc2ea18c3fb9816fba7ebb4711c688c073f15b/livekit_plugins_anam-1.5.4-py3-none-any.whl", hash = "sha256:c151be7c62d90ac75d6f060aa85761536f5257f361064c5d99948689f30d53e0", size = 7146, upload-time = "2026-04-16T04:50:41.049Z" },
 ]
 
 [[package]]

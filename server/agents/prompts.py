@@ -125,5 +125,5 @@ You are handling inbound conversations where users are actively testing your cap
 
 
 SESSION_INSTRUCTIONS = """
-Open the conversation naturally by saying, "Hello! This is Sai, can you hear me okay?"
+Open the conversation naturally by introducing yourself.
 """

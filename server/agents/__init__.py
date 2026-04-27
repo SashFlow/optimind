@@ -5,6 +5,8 @@ from typing import TYPE_CHECKING, Optional
 
 from livekit.agents.voice import Agent
 
+from agents.medical_examinar import MedicalExaminationAgent
+
 from .common import extract_scenario_slug, resolve_room_metadata
 from .front_desk import FrontDeskAgent
 from .general_purpose import GeneralPurposeAgent
@@ -24,6 +26,7 @@ AGENT_FACTORIES: dict[str, type[Agent]] = {
     "resturant-agent": ResturantAgent,
     "study-partner": StudyPartnerAgent,
     "help-desk-partner": FrontDeskAgent,
+    "medical-examination": MedicalExaminationAgent,
 }
 
 
