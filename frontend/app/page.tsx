@@ -14,6 +14,12 @@ const sections = [
           'A general purpose Voice Assistant for handling a variety of interactions across different scenarios.',
       },
       {
+        title: 'Medical Examination (Avatar)',
+        href: '/avatar/medical-examination',
+        description:
+          'A Medical Examination Avatar Assistant for handling medical consultation interactions.',
+      },
+      {
         title: 'General Purpose (Avatar)',
         href: '/avatar/general-purpose',
         description:
