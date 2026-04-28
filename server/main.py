@@ -16,7 +16,7 @@ from livekit.agents.voice import AgentSession
 from livekit.plugins import anam, google, noise_cancellation, silero
 
 from agents import getAgent, getUserData, resolveRoomMetadata
-from agents.tools import end_call, transfer_to_human
+from agents.tools import end_call
 
 load_dotenv()
 
@@ -47,7 +47,7 @@ async def entrypoint(ctx: JobContext):
             vertexai=True,
             voice="Charon",
         ),
-        tools=[google.tools.GoogleSearch(), end_call, transfer_to_human],
+        tools=[google.tools.GoogleSearch(), end_call],
         vad=ctx.proc.userdata["vad"],
         preemptive_generation=True,
         userdata=userdata,

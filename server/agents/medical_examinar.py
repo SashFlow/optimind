@@ -50,30 +50,24 @@ class MedicalExaminationAgent(ScenarioAgent):
 
             1. Have you ever been diagnosed with diabetes?
             2. Have you ever been diagnosed with hypertension?
-            3. Have you ever had any abnormal heart sounds?
-            4. Have you ever had any abnormal lung sounds?
-            5. Have you ever had any heart condition?
-            6. Have you ever experienced any signs of organ damage such as neuropathy, retinopathy, or nephropathy?
-            7. Have you ever undergone HIV/HEDs testing or received a diagnosis for HIV/HEDs?
-            8. Have you ever been diagnosed with liver disease?
-            9. Have you ever been diagnosed with kidney disease?
-            10. Have you ever been diagnosed with cancer or tumors?
-            11. Have you ever been diagnosed with thyroid disorders?
-            12. Have you ever been diagnosed with any respiratory disease such as asthma or COPD?
-            13. Have you ever been diagnosed with any digestive disorders?
-            14. Have you ever experienced any bone or joint issues?
-            15. Have you ever been diagnosed with any autoimmune disorders?
+            3. Have you ever had any abnormal heart conditions or lung sounds?
+            4. Have you ever experienced any signs of organ damage such as neuropathy, retinopathy, or nephropathy?
+            5. Have you ever undergone HIV/HEDs testing or received a diagnosis for HIV/HEDs?
+            6. Have you ever been diagnosed with liver disease?
+            7. Have you ever been diagnosed with kidney disease?
+            8. Have you ever been diagnosed with cancer or tumors?
+            9. Have you ever been diagnosed with thyroid disorders?
+            10. Have you ever been diagnosed with any respiratory disease such as asthma or COPD?
+            11. Have you ever been diagnosed with any autoimmune disorders?
 
             Category Additional Disease:
 
-            1. Have you ever been diagnosed with any circulatory or vascular disorders?
-            2. Have you ever been diagnosed with any neurological disorders?
-            3. Have you ever been diagnosed with any psychiatric conditions such as anxiety or depression?
-            4. Have you ever experienced any respiratory issues?
-            5. Have you ever been diagnosed with any kidney or urinary system disorders?
-            6. Have you ever been diagnosed with any reproductive system disorders?
+            1. Have you ever been diagnosed with any neurological disorders?
+            2. Have you ever been diagnosed with any psychiatric conditions such as anxiety or depression?
+            3. Have you ever been diagnosed with any kidney or urinary system disorders?
 
 
+            You must go through all the questions.
             Provide confirmation after each question and once completed conclude the call after greeting the user.
             Incase the answer is not clear, ask one brief clarifying question to get the answer. Do not ask more than one clarifying question.
             """
