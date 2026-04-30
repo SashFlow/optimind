@@ -1,5 +1,6 @@
 import logging
 import asyncio
+import json
 
 from dotenv import load_dotenv
 from livekit import rtc
@@ -26,6 +27,57 @@ logger.setLevel(logging.INFO)
 server = AgentServer()
 
 
+agents = {
+    'sai': {
+        'gender': 'male',
+        'voice': 'Charon',
+        'avatar': '9483f9bb-e4e2-49d1-936d-85bf2aef9f29',
+    },
+    'sonia': {
+        'gender': 'female',
+        'voice': 'Leda',
+        'avatar': '9483f9bb-e4e2-49d1-936d-85bf2aef9f29',
+    },
+    'sagar': {
+        'gender': 'male',
+        'voice': 'Puck',
+        'avatar': '9483f9bb-e4e2-49d1-936d-85bf2aef9f29',
+    }
+}
+
+DEFAULT_AGENT_NAME = "sai"
+
+
+def _parse_metadata(metadata: str | None) -> dict:
+    raw_metadata = (metadata or "").strip()
+    if not raw_metadata.startswith("{"):
+        return {}
+
+    try:
+        payload = json.loads(raw_metadata)
+    except json.JSONDecodeError:
+        return {}
+
+    return payload if isinstance(payload, dict) else {}
+
+
+def _resolve_agent_name(metadata: str | None) -> str:
+    payload = _parse_metadata(metadata)
+    candidate = str(payload.get("agentName") or "").strip().lower()
+    if candidate in agents:
+        return candidate
+    return DEFAULT_AGENT_NAME
+
+
+def _resolve_agent_init_metadata(metadata: str | None) -> str | None:
+    payload = _parse_metadata(metadata)
+    conversation_agent = str(
+        payload.get("conversationAgent") or payload.get(
+            "conversationAgentName") or ""
+    ).strip()
+    return conversation_agent or metadata
+
+
 def prewarm(proc: JobProcess):
     proc.userdata["vad"] = silero.VAD.load()
 
@@ -39,13 +91,16 @@ async def entrypoint(ctx: JobContext):
         "room": ctx.room.name,
     }
     interaction_mode, _ = resolveRoomMetadata(ctx.job.metadata)
+    selected_agent_name = _resolve_agent_name(ctx.job.metadata)
+    selected_agent = agents[selected_agent_name]
+    agent_init_metadata = _resolve_agent_init_metadata(ctx.job.metadata)
     userdata = getUserData(ctx.job.metadata, ctx)
 
     session = AgentSession(
         llm=google.realtime.RealtimeModel(
             model="gemini-live-2.5-flash-native-audio",
             vertexai=True,
-            voice="Charon",
+            voice=selected_agent["voice"],
         ),
         tools=[google.tools.GoogleSearch(), end_call],
         vad=ctx.proc.userdata["vad"],
@@ -88,8 +143,8 @@ async def entrypoint(ctx: JobContext):
         if participant is not None:
             avatar = anam.AvatarSession(
                 persona_config=anam.PersonaConfig(
-                    name="Liv",
-                    avatarId="9483f9bb-e4e2-49d1-936d-85bf2aef9f29",
+                    name=selected_agent_name.title(),
+                    avatarId=selected_agent["avatar"],
                 ),
             )
             try:
@@ -106,7 +161,7 @@ async def entrypoint(ctx: JobContext):
             room_options.audio_output = True
 
     await session.start(
-        agent=getAgent(ctx.job.metadata),
+        agent=getAgent(agent_init_metadata),
         room=ctx.room,
         room_options=room_options,
     )
