@@ -6,7 +6,9 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
 
-DEFAULT_SCENARIO = "front-desk-agent"
+DEFAULT_SCENARIO = "medical-examination"
+DEFAULT_LANGUAGE = "English"
+DEFAULT_NAME = "Sanjay"
 CURRENT_DATE = datetime.now(tz=timezone.utc).date().isoformat()
 INTERACTION_MODES = {"audio", "video"}
 INTERACTION_MODE_BY_SCENARIO_TYPE = {
@@ -164,10 +166,10 @@ def rows_from_mapping(mapping: Mapping[str, Any]) -> tuple[WidgetField, ...]:
     )
 
 
-def resolve_metadata_payload(metadata: str | None) -> tuple[str, str]:
+def resolve_metadata_payload(metadata: str | None) -> tuple[str, str, str, str]:
     raw_metadata = (metadata or "").strip()
     if not raw_metadata:
-        return "audio", DEFAULT_SCENARIO
+        return "audio", DEFAULT_SCENARIO, DEFAULT_NAME, DEFAULT_LANGUAGE
 
     if raw_metadata.startswith("{"):
         try:
@@ -201,7 +203,10 @@ def resolve_metadata_payload(metadata: str | None) -> tuple[str, str]:
                 if interaction_mode not in INTERACTION_MODES:
                     interaction_mode = "audio"
 
-                return interaction_mode, slug
+                agent_name = payload.get('selectedAgent', DEFAULT_NAME)
+                language = payload.get('selectedLanguage', DEFAULT_LANGUAGE)
+
+                return interaction_mode, slug, agent_name, language
 
     for prefix, interaction_mode in (
         ("video-", "video"),
@@ -210,25 +215,26 @@ def resolve_metadata_payload(metadata: str | None) -> tuple[str, str]:
         ("calls-", "audio"),
     ):
         if raw_metadata.startswith(prefix):
-            slug = raw_metadata[len(prefix) :].strip()
-            return interaction_mode, slug or DEFAULT_SCENARIO
+            slug = raw_metadata[len(prefix):].strip()
+            return interaction_mode, slug or DEFAULT_SCENARIO,  DEFAULT_NAME, DEFAULT_LANGUAGE
 
-    return "audio", raw_metadata
+    return "audio", raw_metadata, DEFAULT_NAME, DEFAULT_LANGUAGE
 
 
 def extract_scenario_slug(metadata: str | None) -> str:
-    _, scenario_slug = resolve_metadata_payload(metadata)
+    _, scenario_slug, _, _ = resolve_metadata_payload(metadata)
     return scenario_slug
 
 
-def resolve_room_metadata(metadata: str | None) -> tuple[str, str]:
+def resolve_room_metadata(metadata: str | None) -> tuple[str, str, str, str]:
     return resolve_metadata_payload(metadata)
 
 
 def build_agent_instructions(
     scenario: ScenarioDefinition, operating_notes: Sequence[str]
 ) -> str:
-    live_data_bullets = "\n".join(f"- {item}" for item in scenario.live_data_points)
+    live_data_bullets = "\n".join(
+        f"- {item}" for item in scenario.live_data_points)
     rule_bullets = "\n".join(f"- {note}" for note in operating_notes)
 
     return f"""

@@ -66,5 +66,5 @@ def getAgent(metadata: str | None) -> Agent:
     return get_agent(metadata)
 
 
-def resolveRoomMetadata(metadata: str | None) -> tuple[str, str]:
+def resolveRoomMetadata(metadata: str | None) -> tuple[str, str, str, str]:
     return resolve_room_metadata(metadata)

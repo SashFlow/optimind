@@ -15,8 +15,10 @@ from livekit.agents import (
 from livekit.agents.voice import AgentSession
 from livekit.plugins import anam, google, noise_cancellation, silero
 
-from agents import getAgent, getUserData, resolveRoomMetadata
+from agents import getUserData
+from agents.common import resolve_metadata_payload
 from agents.tools import end_call
+from agents.medical_examinar import MedicalExaminationAgent
 
 load_dotenv()
 
@@ -24,6 +26,17 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 server = AgentServer()
+
+AGENT_LIB = {
+    'Sanjay': {
+        'gender': 'male',
+        'avatar': '5f46f99e-c4be-4f22-bde2-b364975a0851'
+    },
+    'Samira': {
+        'gender': 'female',
+        'avatar': '48bda6b9-a35c-43df-83a0-0264361677db'
+    }
+}
 
 
 def prewarm(proc: JobProcess):
@@ -33,17 +46,18 @@ def prewarm(proc: JobProcess):
 server.setup_fnc = prewarm
 
 
-@server.rtc_session(agent_name="demo-agent")
+@server.rtc_session(agent_name="demo-agent-4")
 async def entrypoint(ctx: JobContext):
     ctx.log_context_fields = {
         "room": ctx.room.name,
     }
-    interaction_mode, _ = resolveRoomMetadata(ctx.job.metadata)
+    interaction_mode, _, selected_agent, language = resolve_metadata_payload(
+        ctx.job.metadata)
     userdata = getUserData(ctx.job.metadata, ctx)
-
+    agent = AGENT_LIB[selected_agent]
     session = AgentSession(
         llm=google.realtime.RealtimeModel(
-            model="gemini-live-2.5-flash-native-audio",
+            model="gemini-2.5-flash-native-audio-preview-12-2025",
             vertexai=True,
             voice="Charon",
         ),
@@ -106,7 +120,8 @@ async def entrypoint(ctx: JobContext):
             room_options.audio_output = True
 
     await session.start(
-        agent=getAgent(ctx.job.metadata),
+        agent=MedicalExaminationAgent(
+            selected_agent, agent['gender'], language),
         room=ctx.room,
         room_options=room_options,
     )
