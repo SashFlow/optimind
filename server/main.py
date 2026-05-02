@@ -28,14 +28,16 @@ logger.setLevel(logging.INFO)
 server = AgentServer()
 
 AGENT_LIB = {
-    'Sanjay': {
-        'gender': 'male',
-        'avatar': '5f46f99e-c4be-4f22-bde2-b364975a0851'
+    "Sanjay": {
+        "gender": "male",
+        "avatar": "5f46f99e-c4be-4f22-bde2-b364975a0851",
+        "voice": "Charon",
     },
-    'Samira': {
-        'gender': 'female',
-        'avatar': '48bda6b9-a35c-43df-83a0-0264361677db'
-    }
+    "Samira": {
+        "gender": "female",
+        "avatar": "48bda6b9-a35c-43df-83a0-0264361677db",
+        "voice": "Leda",
+    },
 }
 
 
@@ -46,20 +48,21 @@ def prewarm(proc: JobProcess):
 server.setup_fnc = prewarm
 
 
-@server.rtc_session(agent_name="demo-agent-4")
+@server.rtc_session(agent_name="demo-agent")
 async def entrypoint(ctx: JobContext):
     ctx.log_context_fields = {
         "room": ctx.room.name,
     }
     interaction_mode, _, selected_agent, language = resolve_metadata_payload(
-        ctx.job.metadata)
+        ctx.job.metadata
+    )
     userdata = getUserData(ctx.job.metadata, ctx)
     agent = AGENT_LIB[selected_agent]
     session = AgentSession(
         llm=google.realtime.RealtimeModel(
-            model="gemini-2.5-flash-native-audio-preview-12-2025",
+            model="gemini-live-2.5-flash-native-audio",
             vertexai=True,
-            voice="Charon",
+            voice=agent["voice"],
         ),
         tools=[google.tools.GoogleSearch(), end_call],
         vad=ctx.proc.userdata["vad"],
@@ -102,8 +105,8 @@ async def entrypoint(ctx: JobContext):
         if participant is not None:
             avatar = anam.AvatarSession(
                 persona_config=anam.PersonaConfig(
-                    name="Liv",
-                    avatarId="9483f9bb-e4e2-49d1-936d-85bf2aef9f29",
+                    name=selected_agent,
+                    avatarId=agent["avatar"],
                 ),
             )
             try:
@@ -120,8 +123,7 @@ async def entrypoint(ctx: JobContext):
             room_options.audio_output = True
 
     await session.start(
-        agent=MedicalExaminationAgent(
-            selected_agent, agent['gender'], language),
+        agent=MedicalExaminationAgent(selected_agent, agent["gender"], language),
         room=ctx.room,
         room_options=room_options,
     )

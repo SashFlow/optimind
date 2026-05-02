@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { TokenSource } from 'livekit-client';
 import { useSession } from '@livekit/components-react';
 import { ArrowLeftIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr';
@@ -38,12 +38,15 @@ function isScenarioSlug(value: string): value is ScenarioSlug {
 
 export function App({ appConfig, scenarioType }: AppProps) {
   const params = useParams();
+  const searchParams = useSearchParams();
   const slugParam = params?.slug;
   const slug = Array.isArray(slugParam) ? slugParam[0] : slugParam;
   const scenario = slug && isScenarioSlug(slug) ? scenarios[slug] : null;
+  const language: string = searchParams.get('language') || 'English';
+  const selectedAgent: string | null = searchParams.get('selectedAgent') || 'Sanjay';
 
   const tokenSource = TokenSource.endpoint(
-    `/api/token?scenarioType=${encodeURIComponent(scenarioType)}&slug=${encodeURIComponent(slug ?? '')}`
+    `/api/token?scenarioType=${encodeURIComponent(scenarioType)}&slug=${encodeURIComponent(slug ?? '')}&language=${encodeURIComponent(language)}&selectedAgent=${encodeURIComponent(selectedAgent)}`
   );
 
   const session = useSession(

@@ -44,12 +44,16 @@ export async function POST(req: Request) {
     const { searchParams } = new URL(req.url);
     const scenarioType = searchParams.get('scenarioType') ?? 'audio';
     const slug = searchParams.get('slug') ?? '';
+    const language = searchParams.get('language');
+    const selectedAgent = searchParams.get('selectedAgent');
     if (slug) {
       const interactionMode = resolveInteractionMode(scenarioType);
       const agentMetadata = JSON.stringify({
         interactionMode,
         scenarioSlug: slug,
         scenarioType,
+        language,
+        selectedAgent,
       });
 
       roomConfig.metadata = `${interactionMode}-${slug}`;

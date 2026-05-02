@@ -203,8 +203,8 @@ def resolve_metadata_payload(metadata: str | None) -> tuple[str, str, str, str]:
                 if interaction_mode not in INTERACTION_MODES:
                     interaction_mode = "audio"
 
-                agent_name = payload.get('selectedAgent', DEFAULT_NAME)
-                language = payload.get('selectedLanguage', DEFAULT_LANGUAGE)
+                agent_name = payload.get("selectedAgent", DEFAULT_NAME)
+                language = payload.get("language", DEFAULT_LANGUAGE)
 
                 return interaction_mode, slug, agent_name, language
 
@@ -215,8 +215,13 @@ def resolve_metadata_payload(metadata: str | None) -> tuple[str, str, str, str]:
         ("calls-", "audio"),
     ):
         if raw_metadata.startswith(prefix):
-            slug = raw_metadata[len(prefix):].strip()
-            return interaction_mode, slug or DEFAULT_SCENARIO,  DEFAULT_NAME, DEFAULT_LANGUAGE
+            slug = raw_metadata[len(prefix) :].strip()
+            return (
+                interaction_mode,
+                slug or DEFAULT_SCENARIO,
+                DEFAULT_NAME,
+                DEFAULT_LANGUAGE,
+            )
 
     return "audio", raw_metadata, DEFAULT_NAME, DEFAULT_LANGUAGE
 
@@ -233,8 +238,7 @@ def resolve_room_metadata(metadata: str | None) -> tuple[str, str, str, str]:
 def build_agent_instructions(
     scenario: ScenarioDefinition, operating_notes: Sequence[str]
 ) -> str:
-    live_data_bullets = "\n".join(
-        f"- {item}" for item in scenario.live_data_points)
+    live_data_bullets = "\n".join(f"- {item}" for item in scenario.live_data_points)
     rule_bullets = "\n".join(f"- {note}" for note in operating_notes)
 
     return f"""
