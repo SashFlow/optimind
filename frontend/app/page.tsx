@@ -28,12 +28,7 @@ const agents = [
   },
 ];
 
-const popularIndianLanguages = [
-  'English',
-  'Hindi',
-  'Marathi',
-  'Bengali',
-];
+const popularIndianLanguages = ['English', 'Hindi', 'Marathi', 'Bengali'];
 
 type Mode = (typeof modes)[number]['id'];
 
