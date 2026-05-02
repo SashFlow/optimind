@@ -33,12 +33,6 @@ const popularIndianLanguages = [
   'Hindi',
   'Marathi',
   'Bengali',
-  'Telugu',
-  'Tamil',
-  'Gujarati',
-  'Kannada',
-  'Malayalam',
-  'Punjabi',
 ];
 
 type Mode = (typeof modes)[number]['id'];
