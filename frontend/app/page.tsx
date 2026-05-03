@@ -24,11 +24,17 @@ const agents = [
   },
   {
     name: 'Samira',
-    url: '/simran.mp4',
+    url: '/anjali.mp4',
   },
 ];
 
-const popularIndianLanguages = ['English', 'Hindi', 'Marathi', 'Bengali'];
+const popularIndianLanguages = [
+  'English',
+  'Hindi',
+  'Marathi',
+  'Bengali',
+  'Multilingual- Primary English',
+];
 
 type Mode = (typeof modes)[number]['id'];
 

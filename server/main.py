@@ -35,7 +35,7 @@ AGENT_LIB = {
     },
     "Samira": {
         "gender": "female",
-        "avatar": "48bda6b9-a35c-43df-83a0-0264361677db",
+        "avatar": "d3e94c42-b348-4bec-8225-e47a682128a0",
         "voice": "Leda",
     },
 }
@@ -123,8 +123,7 @@ async def entrypoint(ctx: JobContext):
             room_options.audio_output = True
 
     await session.start(
-        agent=MedicalExaminationAgent(
-            selected_agent, agent["gender"], language),
+        agent=MedicalExaminationAgent(selected_agent, agent["gender"], language),
         room=ctx.room,
         room_options=room_options,
     )
