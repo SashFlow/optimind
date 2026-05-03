@@ -7,7 +7,7 @@ from typing import Any
 from livekit.agents.voice import Agent
 from livekit.agents.voice.room_io import RoomIO
 from livekit.rtc.rpc import RpcError
-
+from livekit.agents.beta.tools import EndCallTool
 from .common import WidgetPayload
 from .prompts import SESSION_INSTRUCTIONS
 
@@ -16,7 +16,12 @@ logger = logging.getLogger(__name__)
 
 class ScenarioAgent(Agent):
     def __init__(self, *, instructions: str) -> None:
-        super().__init__(instructions=instructions)
+        end_call_tool = EndCallTool(
+            extra_description="Only end the call after confirming the user examination is complete and all the questions are answered.",
+            delete_room=True,
+            end_instructions="Thank the user for their time and wish them a good day.",
+        )
+        super().__init__(instructions=instructions, tools=end_call_tool.tools)
 
     async def on_enter(self) -> None:
         # await self.clear_widgets()

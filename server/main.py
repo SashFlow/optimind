@@ -12,12 +12,10 @@ from livekit.agents import (
     cli,
     room_io,
 )
-from livekit.agents.voice import AgentSession
+from livekit.agents.voice import AgentSession, AgentStateChangedEvent
 from livekit.plugins import anam, google, noise_cancellation, silero
-
 from agents import getUserData
 from agents.common import resolve_metadata_payload
-from agents.tools import end_call
 from agents.medical_examinar import MedicalExaminationAgent
 
 load_dotenv()
@@ -64,11 +62,48 @@ async def entrypoint(ctx: JobContext):
             vertexai=True,
             voice=agent["voice"],
         ),
-        tools=[google.tools.GoogleSearch(), end_call],
+        tools=[google.tools.GoogleSearch()],
         vad=ctx.proc.userdata["vad"],
         preemptive_generation=True,
         userdata=userdata,
     )
+
+    false_interruption_task: asyncio.Task[None] | None = None
+
+    async def _check_for_false_interruption() -> None:
+        try:
+            await asyncio.sleep(10)
+            if session.agent_state != "listening":
+                return
+
+            logger.info(
+                "agent still listening after speaking; prompting for clarification"
+            )
+            session.generate_reply(
+                instructions=(
+                    "Looks like I may have been interrupted by mistake. "
+                    "Ask the user briefly if they want clarification or to continue."
+                )
+            )
+        except asyncio.CancelledError:
+            # State changed before timeout, so this check is no longer needed.
+            return
+        except Exception:
+            logger.exception("failed to run false interruption check")
+
+    @session.on("agent_state_changed")
+    def _on_agent_state_changed(ev: AgentStateChangedEvent):
+        nonlocal false_interruption_task
+
+        if false_interruption_task and not false_interruption_task.done():
+            false_interruption_task.cancel()
+            false_interruption_task = None
+
+        if ev.new_state == "listening" and ev.old_state == "speaking":
+            # If we remain in listening unexpectedly, nudge the user for clarification.
+            false_interruption_task = asyncio.create_task(
+                _check_for_false_interruption()
+            )
 
     @session.on("agent_false_interruption")
     def _on_agent_false_interruption(ev: AgentFalseInterruptionEvent):
@@ -123,7 +158,7 @@ async def entrypoint(ctx: JobContext):
             room_options.audio_output = True
 
     await session.start(
-        agent=MedicalExaminationAgent(selected_agent, agent["gender"], language),
+        agent=MedicalExaminationAgent(selected_agent, agent["gender"], "Hindi"),
         room=ctx.room,
         room_options=room_options,
     )

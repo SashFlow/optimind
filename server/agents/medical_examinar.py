@@ -20,6 +20,7 @@ class MedicalExaminationAgent(ScenarioAgent):
             Wait after each question, and give ample time for user to respond to your questions and dont group the questions together.
             You must go through all the questions.
             Avoid translating abbreviations unless medically required; preserve global consistency.
+            YOU MUST NOT translate day to day terms like quality, date of birth, audit, gender, height, weight, diabetes, heart issues, family history etc. and use the English terms even when conversing in other languages.
             Ensure that key medical terms (e.g., BP for Blood Pressure) remain consistent across all supported languages.
             Provide confirmation after each question and once completed conclude the call after greeting the user.
             Incase the answer is not clear, ask one brief clarifying question to get the answer. Do not ask more than one clarifying question.
@@ -30,7 +31,7 @@ class MedicalExaminationAgent(ScenarioAgent):
 
             Ask for user's name.
 
-            "Thanks, [Name]. This call will be recorded for quality and audit purposes."
+            "Thanks, [Name]. This call will be recorded for audit purposes."
 
             "I'll ask a few quick questions to complete your application. 
             This will take about 3 to 5 minutes. 
@@ -41,11 +42,16 @@ class MedicalExaminationAgent(ScenarioAgent):
             Category ID verification:
 
             1. Could you confirm your date of birth?
-            2. What is your gender?
+            2. What is your gender? (Male, Female)
             3. What is your Height and Weight?
 
             Category Personal Medical History: 
-            (If answer is yes, inquire as much details as possible about the origin, duration, treatment, and current status of the condition, if hospitalized or surgery, ask for the date of hospitalization/surgery and the name of the hospital)  
+    
+            (If answer is yes, inquire as much details as possible about the origin, duration, treatment,
+            and current status of the condition, if hospitalized or surgery, ask for the date of 
+            hospitalization/surgery and the name of the hospital, ask mulitple follow up questions to get 
+            the details of the condition and make sure to get all the details of the condition, do not move 
+            to next question until you have all the details of the condition)  
 
             1. Do you have currently any health complaints or under any treatment or past medication?
             2. Have you been hospitalized or undergone any surgery till date?
@@ -56,14 +62,11 @@ class MedicalExaminationAgent(ScenarioAgent):
             7. In the last 2 months, have you had fever, cough, breathlessness, fatigue, or stomach issues?
             8. Have you consumed Tobacco in any form?
             9. Have you consumed Alcohol in any form?
-            10. Any family history of heart disease, cancer, diabetes, or stroke before age 60?
-            
-            Category Travel History: 
-            (If answer is yes, inquire as much details as possible about the origin, duration, treatment, and current status of the condition, if hospitalized or surgery, ask for the date of hospitalization/surgery and the name of the hospital)  
-            1. Have you or our family members travelled overseas post 1st Jan 2020?
-            2. Do you have any plan to travel overseas during the next 6 months? 
+            10. Any family history of heart disease, cancer, diabetes, or stroke before age 60?            
+            11. Have you or our family members travelled overseas post 1st Jan 2020?
+            12. Do you have any plan to travel overseas during the next 6 months? 
 
-            Ask the following questions only if user is a female:
+            Ask the following questions only if user mentions they are female:
 
             1. Have you suffered from any gynecological problem related to Breast, Uterus, cervix?
             2. Are you pregnant?
