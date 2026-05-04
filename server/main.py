@@ -158,7 +158,7 @@ async def entrypoint(ctx: JobContext):
             room_options.audio_output = True
 
     await session.start(
-        agent=MedicalExaminationAgent(selected_agent, agent["gender"], "Hindi"),
+        agent=MedicalExaminationAgent(selected_agent, agent["gender"], language),
         room=ctx.room,
         room_options=room_options,
     )
