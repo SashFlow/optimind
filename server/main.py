@@ -2,21 +2,20 @@ import logging
 import asyncio
 
 from dotenv import load_dotenv
-from livekit import rtc
 from livekit.agents import (
     NOT_GIVEN,
     AgentFalseInterruptionEvent,
     AgentServer,
     JobContext,
-    JobProcess,
     cli,
     room_io,
 )
 from livekit.agents.voice import AgentSession, AgentStateChangedEvent
-from livekit.plugins import anam, google, noise_cancellation, silero
-from agents import getUserData
+from livekit.plugins import anam, google, ai_coustics
+from livekit.plugins.turn_detector.multilingual import MultilingualModel
 from agents.common import resolve_metadata_payload
 from agents.medical_examinar import MedicalExaminationAgent
+from agents.tools import end_call
 
 load_dotenv()
 
@@ -39,14 +38,14 @@ AGENT_LIB = {
 }
 
 
-def prewarm(proc: JobProcess):
-    proc.userdata["vad"] = silero.VAD.load()
+# def prewarm(proc: JobProcess):
+#     proc.userdata["vad"] = silero.VAD.load()
 
 
-server.setup_fnc = prewarm
+# server.setup_fnc = prewarm
 
 
-@server.rtc_session(agent_name="demo-agent")
+@server.rtc_session(agent_name="demo-agent-6")
 async def entrypoint(ctx: JobContext):
     ctx.log_context_fields = {
         "room": ctx.room.name,
@@ -54,7 +53,6 @@ async def entrypoint(ctx: JobContext):
     interaction_mode, _, selected_agent, language = resolve_metadata_payload(
         ctx.job.metadata
     )
-    userdata = getUserData(ctx.job.metadata, ctx)
     agent = AGENT_LIB[selected_agent]
     session = AgentSession(
         llm=google.realtime.RealtimeModel(
@@ -62,27 +60,24 @@ async def entrypoint(ctx: JobContext):
             vertexai=True,
             voice=agent["voice"],
         ),
-        tools=[google.tools.GoogleSearch()],
-        vad=ctx.proc.userdata["vad"],
+        tools=[google.tools.GoogleSearch(), end_call],
+        turn_detection=MultilingualModel(),
+        vad=ai_coustics.VAD(),
         preemptive_generation=True,
-        userdata=userdata,
-        resume_false_interruption=True,
     )
 
     false_interruption_task: asyncio.Task[None] | None = None
 
     async def _check_for_false_interruption() -> None:
         try:
-            await asyncio.sleep(10)
+            await asyncio.sleep(20)
             if session.agent_state != "listening":
                 return
 
             logger.info(
                 "agent still listening after speaking; prompting for clarification"
             )
-            session.generate_reply(
-                instructions=("Ask the user briefly if they want to continue.")
-            )
+            session.generate_reply(instructions=("Can you repeat the question."))
         except asyncio.CancelledError:
             # State changed before timeout, so this check is no longer needed.
             return
@@ -113,11 +108,10 @@ async def entrypoint(ctx: JobContext):
 
     room_options = room_io.RoomOptions(
         audio_input=room_io.AudioInputOptions(
-            noise_cancellation=lambda params: noise_cancellation.BVCTelephony()
-            if params.participant.kind == rtc.ParticipantKind.PARTICIPANT_KIND_SIP
-            else noise_cancellation.BVC(),
+            noise_cancellation=ai_coustics.audio_enhancement(
+                model=ai_coustics.EnhancerModel.QUAIL_VF_L
+            ),
         ),
-        # In avatar mode, audio is published by the avatar worker.
         audio_output=not use_avatar,
     )
 

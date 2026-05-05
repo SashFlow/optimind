@@ -66,16 +66,19 @@ class MedicalExaminationAgent(ScenarioAgent):
             11. Have you or our family members travelled overseas post 1st Jan 2020?
             12. Do you have any plan to travel overseas during the next 6 months? 
 
-            Ask the following questions only if the user mentions they of the female gender or similar in other languages:
-
-            1. Have you suffered from any gynecological problem related to Breast, Uterus, cervix?
-            2. Are you pregnant?
-
+            
             Category Additional Disease:
 
             1. Have you or your family members ever tested positive for the novel coronavirus? If yes, provide the date of positive diagnosis?
             2. Have you been vaccinated for COVID-19? If yes, ask the dates for dose 1 and dose 2.
             
-            Once the conversation is complete, call the end_call function to end the call.
+            Ask the following questions only if the user mentions they of the female gender or similar in other languages:
+
+            1. Have you suffered from any gynecological problem related to Breast, Uterus, cervix?
+            2. Are you pregnant?
+
+            Greet the user and then call the end_call function to end the call. 
+            
+            YOU MUST NEVER CALL THE END_CALL FUNCTION WITHOUT GREETING THE USER AND SAYING A GOODBYE TO THEM. ALWAYS MAKE SURE TO END THE CONVERSATION ONCE THE QUESTIONS ARE ANSWERED AND ON A GOOD NOTE WITH A POLITE GREETING.
             """
         )

@@ -7,11 +7,9 @@ requires-python = ">=3.12"
 dependencies = [
     "google-genai>=1.73.1",
     "livekit>=1.1.5",
-    "livekit-agents[anam,google,images,openai,tavus]~=1.5",
-    "livekit-plugins-bey>=1.5.4",
+    "livekit-agents[anam,google]>=1.5.4",
+    "livekit-plugins-ai-coustics>=0.2.11",
     "livekit-plugins-google>=1.5.4",
-    "livekit-plugins-noise-cancellation>=0.2.5",
-    "livekit-plugins-silero>=1.5.4",
     "livekit-plugins-turn-detector>=1.5.4",
     "livekit-protocol>=1.1.5",
     "python-dotenv>=1.2.2",

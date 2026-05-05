@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { WelcomeImage } from '@/components/app/welcome-view';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -39,18 +40,9 @@ const popularIndianLanguages = [
 type Mode = (typeof modes)[number]['id'];
 
 function AudioWaveformPreview() {
-  const bars = [40, 66, 52, 78, 60, 48, 70, 56, 74, 44, 64, 50];
-
   return (
-    <div className="bg-muted/40 flex aspect-[3/2] w-full items-end justify-center gap-1 rounded-lg border px-4 py-3">
-      {bars.map((height, index) => (
-        <span
-          key={`${height}-${index}`}
-          className="bg-primary/80 inline-block w-2 rounded-full"
-          style={{ height: `${height}%` }}
-          aria-hidden="true"
-        />
-      ))}
+    <div className="bg-muted/40 flex aspect-[3/2] w-full items-center justify-center gap-1 rounded-lg border px-4 py-3">
+      <WelcomeImage />
     </div>
   );
 }

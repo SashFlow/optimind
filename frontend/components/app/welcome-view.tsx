@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import type { ScenarioDetails } from '@/types';
 
-function WelcomeImage() {
+export function WelcomeImage() {
   return (
     <svg
       width="64"

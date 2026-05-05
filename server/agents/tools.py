@@ -12,23 +12,17 @@ logger.setLevel(logging.INFO)
 async def end_call(ctx: RunContext):
     """End the current call or live session in a controlled way.
 
-    Use this when the user explicitly wants to stop, the conversation has naturally
+    Use this when the user explicitly wants to stop, or the conversation has naturally
     finished, the user is no longer engaging, or a polite close-out is the best
     experience. Prefer giving a short closing line before invoking this tool so the
     ending feels natural to the user.
     """
-    job_ctx = get_job_context()
-    if job_ctx is None:
-        logging.error("No job context found when trying to end call.")
-        return "Error: No job context found."
 
     logger.info("Ending call as requested by agent.")
 
     try:
-        await asyncio.sleep(5)
-        await job_ctx.api.room.delete_room(
-            api.DeleteRoomRequest(room=job_ctx.room.name)
-        )
+        await asyncio.sleep(3)
+        ctx.session.shutdown()
         logger.info("Call ended successfully.")
         return "Call ended successfully."
     except Exception as e:
