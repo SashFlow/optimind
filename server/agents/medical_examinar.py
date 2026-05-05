@@ -42,7 +42,7 @@ class MedicalExaminationAgent(ScenarioAgent):
             Category ID verification:
 
             1. Could you confirm your date of birth?
-            2. What is your gender? (Male, Female)
+            2. What is your gender? (Male, Female, you must remember this throughout the conversation as it will determine some of the follow up questions you will ask) 
             3. What is your Height and Weight?
 
             Category Personal Medical History: 
@@ -66,7 +66,7 @@ class MedicalExaminationAgent(ScenarioAgent):
             11. Have you or our family members travelled overseas post 1st Jan 2020?
             12. Do you have any plan to travel overseas during the next 6 months? 
 
-            Ask the following questions only if user mentions they are female:
+            Ask the following questions only if the user mentions they of the female gender or similar in other languages:
 
             1. Have you suffered from any gynecological problem related to Breast, Uterus, cervix?
             2. Are you pregnant?
@@ -75,5 +75,7 @@ class MedicalExaminationAgent(ScenarioAgent):
 
             1. Have you or your family members ever tested positive for the novel coronavirus? If yes, provide the date of positive diagnosis?
             2. Have you been vaccinated for COVID-19? If yes, ask the dates for dose 1 and dose 2.
+            
+            Once the conversation is complete, call the end_call function to end the call.
             """
         )

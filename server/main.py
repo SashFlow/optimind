@@ -46,7 +46,7 @@ def prewarm(proc: JobProcess):
 server.setup_fnc = prewarm
 
 
-@server.rtc_session(agent_name="demo-agent")
+@server.rtc_session(agent_name="demo-agent-6")
 async def entrypoint(ctx: JobContext):
     ctx.log_context_fields = {
         "room": ctx.room.name,
@@ -66,6 +66,7 @@ async def entrypoint(ctx: JobContext):
         vad=ctx.proc.userdata["vad"],
         preemptive_generation=True,
         userdata=userdata,
+        resume_false_interruption=True,
     )
 
     false_interruption_task: asyncio.Task[None] | None = None
@@ -80,10 +81,7 @@ async def entrypoint(ctx: JobContext):
                 "agent still listening after speaking; prompting for clarification"
             )
             session.generate_reply(
-                instructions=(
-                    "Looks like I may have been interrupted by mistake. "
-                    "Ask the user briefly if they want clarification or to continue."
-                )
+                instructions=("Ask the user briefly if they want to continue.")
             )
         except asyncio.CancelledError:
             # State changed before timeout, so this check is no longer needed.
