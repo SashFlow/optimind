@@ -8,6 +8,20 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
+# Add this function definition anywhere
+async def hangup_call():
+    ctx = get_job_context()
+    if ctx is None:
+        # Not running in a job context
+        return
+
+    await ctx.api.room.delete_room(
+        api.DeleteRoomRequest(
+            room=ctx.room.name,
+        )
+    )
+
+
 @function_tool
 async def end_call(ctx: RunContext):
     """End the current call or live session in a controlled way.
@@ -19,15 +33,9 @@ async def end_call(ctx: RunContext):
     """
 
     logger.info("Ending call as requested by agent.")
-
-    try:
-        await asyncio.sleep(3)
-        ctx.session.shutdown()
-        logger.info("Call ended successfully.")
-        return "Call ended successfully."
-    except Exception as e:
-        logger.error(f"Failed to end call: {e}")
-        return f"Error: Failed to end call - {e}"
+    await ctx.wait_for_playout()
+    await asyncio.sleep(3)
+    await hangup_call()
 
 
 @function_tool

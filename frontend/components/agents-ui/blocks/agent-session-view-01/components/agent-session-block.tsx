@@ -3,7 +3,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, type MotionProps, motion } from 'motion/react';
 import { useAgent, useSessionContext, useSessionMessages } from '@livekit/components-react';
-import { useKrispNoiseFilter } from '@livekit/components-react/krisp';
 import { AgentChatTranscript } from '@/components/agents-ui/agent-chat-transcript';
 import {
   AgentControlBar,
@@ -178,8 +177,7 @@ export function AgentSessionView_01({
   ...props
 }: React.ComponentProps<'section'> & AgentSessionView_01Props) {
   const session = useSessionContext();
-  const krisp = useKrispNoiseFilter();
-  krisp.setNoiseFilterEnabled(true);
+
   const { messages } = useSessionMessages(session);
   const [chatOpen, setChatOpen] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);

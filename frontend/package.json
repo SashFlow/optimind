@@ -13,7 +13,6 @@
   },
   "dependencies": {
     "@livekit/components-react": "^2.9.20",
-    "@livekit/krisp-noise-filter": "^0.4.3",
     "@livekit/protocol": "^1.41.0",
     "@phosphor-icons/react": "^2.1.8",
     "@radix-ui/react-collapsible": "^1.1.12",

@@ -16,6 +16,7 @@ class MedicalExaminationAgent(ScenarioAgent):
             Use everyday simple vocabulary that easy to understand for people of all ages.
             Incorporate paragraphs with concise sentences.
             Paragraphs are only 1-2 sentences long.
+            User can provide or correct information in any order, so be sure to ask all the questions and confirm the answers at the end.
             Make sure the wordings are less predictable, has high burstiness, and high stylometric.
             Wait after each question, and give ample time for user to respond to your questions and dont group the questions together.
             You must go through all the questions.
