@@ -1,0 +1,17 @@
+# required fields
+api_key: livekit server api key. LIVEKIT_API_KEY env can be used instead
+api_secret: livekit server api secret. LIVEKIT_API_SECRET env can be used instead
+ws_url: livekit server websocket url. LIVEKIT_WS_URL can be used instead
+redis:
+  address: 172.17.0.1:6379
+
+logging:
+  level: info
+storage:
+  s3:
+    access_key: AWS_ACCESS_KEY_ID env or EMPTY if using IAM Role or instance profile
+    secret: AWS_SECRET_ACCESS_KEY env or EMPTY if using IAM Role or instance profile
+    session_token: AWS_SESSION_TOKEN env or EMPTY if using IAM Role or instance profile
+    region: AWS_DEFAULT_REGION env or EMPTY if using IAM Role or instance profile
+    endpoint: (optional) custom endpoint
+    bucket: bucket to upload files to

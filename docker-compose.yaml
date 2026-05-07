@@ -16,3 +16,16 @@ services:
     restart: unless-stopped
     env_file:
       - ./server/.env
+
+  egress:
+    image: livekit/egress:latest
+    environment:
+      - EGRESS_CONFIG_FILE=/out/config.yaml
+    volumes:
+      - ~/egress:/out
+
+  redis:
+    image: redis:latest
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
