@@ -21,12 +21,12 @@ const modes = [
 
 const agents = [
   {
-    name: 'Dr. Sanjay',
+    name: 'Sanjay',
     url: '/sanjay.mp4',
     icon: <GenderMaleIcon size={48} />,
   },
   {
-    name: 'Dr. Samira',
+    name: 'Samira',
     url: '/anjali.mp4',
     icon: <GenderFemaleIcon size={48} />,
   },
@@ -107,7 +107,7 @@ export default function Page() {
                         {agent.icon}
                       </div>
                     )}
-                    <CardTitle className="text-center text-base">{agent.name}</CardTitle>
+                    <CardTitle className="text-center text-base">Dr. {agent.name}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <Button

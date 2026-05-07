@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import { AnimatePresence, motion } from 'motion/react';
 import { useSessionContext } from '@livekit/components-react';
@@ -47,6 +48,11 @@ export function ViewController({ appConfig, scenario }: ViewControllerProps) {
   const handleStartCall = async () => {
     await Promise.resolve(start());
   };
+
+  useEffect(() => {
+    if (isConnected) {
+    }
+  }, [isConnected]);
 
   return (
     <AnimatePresence mode="wait">

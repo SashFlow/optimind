@@ -1,5 +1,7 @@
 import logging
 import asyncio
+import os
+import time
 
 from dotenv import load_dotenv
 from livekit.agents import (
@@ -9,6 +11,14 @@ from livekit.agents import (
     JobContext,
     cli,
     room_io,
+)
+from livekit import api
+from livekit.protocol.egress import (
+    EncodedFileOutput,
+    RoomCompositeEgressRequest,
+    EncodedFileType,
+    S3Upload,
+    StopEgressRequest,
 )
 from livekit.agents.voice import AgentSession, AgentStateChangedEvent
 from livekit.plugins import anam, google, ai_coustics
@@ -24,6 +34,9 @@ logger.setLevel(logging.INFO)
 
 server = AgentServer()
 
+# lkapi = api.LiveKitAPI()
+# egress = lkapi.egress
+
 AGENT_LIB = {
     "Sanjay": {
         "gender": "male",
@@ -37,6 +50,18 @@ AGENT_LIB = {
     },
 }
 
+EGRESS_IDS = {}
+
+
+def set_egress_id(room_name: str, egress_id: str) -> None:
+    EGRESS_IDS[room_name] = egress_id
+
+
+def get_egress_id(room_name: str) -> str | None:
+    id = EGRESS_IDS.get(room_name)
+    del EGRESS_IDS[room_name]
+    return id
+
 
 # def prewarm(proc: JobProcess):
 #     proc.userdata["vad"] = silero.VAD.load()
@@ -45,7 +70,7 @@ AGENT_LIB = {
 # server.setup_fnc = prewarm
 
 
-@server.rtc_session(agent_name="demo-agent")
+@server.rtc_session(agent_name="demo-agent-6")
 async def entrypoint(ctx: JobContext):
     ctx.log_context_fields = {
         "room": ctx.room.name,
@@ -103,6 +128,12 @@ async def entrypoint(ctx: JobContext):
         logger.info("false positive interruption, resuming")
         session.generate_reply(instructions=ev.extra_instructions or NOT_GIVEN)
 
+    # @session.on("close")
+    # async def _on_close():
+    #     await egress.stop_egress(
+    #         stop=StopEgressRequest(egress_id=get_egress_id(ctx.room.name))
+    #     )
+
     use_avatar = interaction_mode == "video"
     avatar_started = False
 
@@ -154,6 +185,26 @@ async def entrypoint(ctx: JobContext):
         room=ctx.room,
         room_options=room_options,
     )
+    # response = await egress.start_room_composite_egress(
+    #     start=RoomCompositeEgressRequest(
+    #         room_name=ctx.room.name,
+    #         audio_only=False,
+    #         layout="grid",
+    #         preset=api.EncodingOptionsPreset.H264_720P_30,
+    #         file=EncodedFileOutput(
+    #             file_type=EncodedFileType.MP4,
+    #             filepath=f"/{ctx.room.name}/recording-{int(time.time())}.mp4",
+    #             s3=S3Upload(
+    #                 access_key=os.getenv("S3_ACCESS_KEY", ""),
+    #                 secret=os.getenv("S3_SECRET_KEY", ""),
+    #                 bucket=os.getenv("S3_BUCKET", ""),
+    #                 region=os.getenv("S3_REGION", ""),
+    #                 endpoint=os.getenv("S3_ENDPOINT", ""),
+    #             ),
+    #         ),
+    #     )
+    # )
+    # set_egress_id(ctx.room.name, response.egress_id)
     await ctx.connect()
 
 
