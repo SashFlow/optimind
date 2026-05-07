@@ -9,7 +9,10 @@ function getStatusCode(error: unknown) {
     return 500;
   }
 
-  if (error.message === 'Relative path traversal is not allowed' || error.message === 'File path is required') {
+  if (
+    error.message === 'Relative path traversal is not allowed' ||
+    error.message === 'File path is required'
+  ) {
     return 400;
   }
 
