@@ -7,10 +7,5 @@ redis:
 logging:
   level: info
 storage:
-  s3:
-    access_key: AWS_ACCESS_KEY_ID env or EMPTY if using IAM Role or instance profile
-    secret: AWS_SECRET_ACCESS_KEY env or EMPTY if using IAM Role or instance profile
-    session_token: AWS_SESSION_TOKEN env or EMPTY if using IAM Role or instance profile
-    region: AWS_DEFAULT_REGION env or EMPTY if using IAM Role or instance profile
-    endpoint: (optional) custom endpoint
-    bucket: bucket to upload files to
+  gcp:
+    bucket: demo_voice_ai

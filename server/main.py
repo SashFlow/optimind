@@ -17,7 +17,7 @@ from livekit.protocol.egress import (
     EncodedFileOutput,
     RoomCompositeEgressRequest,
     EncodedFileType,
-    S3Upload,
+    GCPUpload,
     StopEgressRequest,
 )
 from livekit.agents.voice import AgentSession, AgentStateChangedEvent
@@ -182,27 +182,27 @@ async def entrypoint(ctx: JobContext):
         room_options=room_options,
     )
 
-    response = await egress.start_room_composite_egress(
-        start=RoomCompositeEgressRequest(
-            room_name=ctx.room.name,
-            audio_only=False,
-            layout="grid",
-            preset=api.EncodingOptionsPreset.H264_720P_30,
-            file=EncodedFileOutput(
-                file_type=EncodedFileType.MP4,
-                filepath=f"{ctx.room.name}/recording-{int(time.time())}.mp4",
-                s3=S3Upload(
-                    access_key=os.getenv("S3_ACCESS_KEY", ""),
-                    secret=os.getenv("S3_SECRET_KEY", ""),
-                    bucket=os.getenv("S3_BUCKET", ""),
-                    region=os.getenv("S3_REGION", ""),
-                    endpoint=os.getenv("S3_ENDPOINT", ""),
-                    force_path_style=True,
+    creds = None
+    with open("./creds.json", "r") as f:
+        creds = f.read()
+    if creds:
+        response = await egress.start_room_composite_egress(
+            start=RoomCompositeEgressRequest(
+                room_name=ctx.room.name,
+                audio_only=False,
+                layout="grid",
+                preset=api.EncodingOptionsPreset.H264_720P_30,
+                file=EncodedFileOutput(
+                    file_type=EncodedFileType.MP4,
+                    filepath=f"{ctx.room.name}/recording-{int(time.time())}.mp4",
+                    gcp=GCPUpload(
+                        credentials=creds,
+                        bucket=os.getenv("GCP_BUCKET_NAME", "").strip(),
+                    ),
                 ),
-            ),
+            )
         )
-    )
-    set_egress_id(ctx.room.name, response.egress_id)
+        set_egress_id(ctx.room.name, response.egress_id)
     await ctx.connect()
 
 

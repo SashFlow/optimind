@@ -5,7 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "boto3>=1.35.0",
+    "google-cloud-storage>=2.19.0",
     "google-genai>=1.73.1",
     "livekit>=1.1.5",
     "livekit-agents[anam,google]>=1.5.4",
@@ -13,7 +13,6 @@ dependencies = [
     "livekit-plugins-google>=1.5.4",
     "livekit-plugins-turn-detector>=1.5.4",
     "livekit-protocol>=1.1.5",
-    "openpyxl>=3.1.5",
     "python-dotenv>=1.2.2",
     "tzdata>=2026.1",
 ]
