@@ -152,6 +152,8 @@ export interface AgentSessionView_01Props {
   audioVisualizerRadialRadius?: number;
   /** Stroke width of the wave path when `audioVisualizerType` is `wave`. */
   audioVisualizerWaveLineWidth?: number;
+  /** Forces camera to be enabled each time a session connects. */
+  forceEnableCameraOnConnect?: boolean;
   /** Optional class name merged onto the outer `<section>` container. */
   className?: string;
 }
@@ -172,6 +174,7 @@ export function AgentSessionView_01({
   audioVisualizerRadialBarCount,
   audioVisualizerRadialRadius,
   audioVisualizerWaveLineWidth,
+  forceEnableCameraOnConnect = true,
   ref,
   className,
   ...props
@@ -268,6 +271,7 @@ export function AgentSessionView_01({
             controls={controls}
             isChatOpen={chatOpen}
             isConnected={session.isConnected}
+            forceEnableCameraOnConnect={forceEnableCameraOnConnect}
             onDisconnect={session.end}
             onIsChatOpenChange={setChatOpen}
           />

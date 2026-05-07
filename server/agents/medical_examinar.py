@@ -28,7 +28,7 @@ class MedicalExaminationAgent(ScenarioAgent):
             
             Conversation flow:
 
-            "Hi, this is {name}, calling regarding your insurance application."
+            "Hi, this is Doctor {name}, calling regarding your insurance application."
 
             Ask for user's name.
 

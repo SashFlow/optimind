@@ -1,6 +1,8 @@
 'use client';
 
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { PreconnectMediaSetup } from '@/components/app/preconnect-media-setup';
 import { Button } from '@/components/ui/button';
 import type { ScenarioDetails } from '@/types';
 
@@ -24,17 +26,37 @@ export function WelcomeImage() {
 
 interface WelcomeViewProps {
   startButtonText: string;
-  onStartCall: () => void;
+  onStartCall: () => Promise<void> | void;
   scenario: ScenarioDetails;
+  requireMediaSetup?: boolean;
+  showCameraPreview?: boolean;
 }
 
 export const WelcomeView = ({
   startButtonText,
   onStartCall,
   scenario,
+  requireMediaSetup = true,
+  showCameraPreview = true,
   ref,
 }: React.ComponentProps<'div'> & WelcomeViewProps) => {
   const router = useRouter();
+  const [canStart, setCanStart] = useState(!requireMediaSetup);
+  const [isStarting, setIsStarting] = useState(false);
+  const beforeStartRef = useRef<() => void>(() => undefined);
+
+  const handleStartCall = async () => {
+    if (!canStart || isStarting) return;
+
+    setIsStarting(true);
+    try {
+      beforeStartRef.current();
+      await onStartCall();
+    } finally {
+      setIsStarting(false);
+    }
+  };
+
   return (
     <div ref={ref}>
       <section className="bg-background mx-auto flex max-w-5xl flex-col items-center justify-center px-6 py-10 text-center md:px-10">
@@ -45,7 +67,7 @@ export const WelcomeView = ({
           {scenario.description}
         </p>
 
-        <div className="mt-8 grid w-full gap-4 text-left md:grid-cols-1">
+        <div className="mt-8 grid w-full gap-4 text-left md:grid-cols-2">
           <div className="border-border/70 bg-card rounded-2xl border p-6 shadow-sm">
             <h2 className="text-center text-sm font-semibold tracking-wide uppercase">
               Capabilities
@@ -59,36 +81,27 @@ export const WelcomeView = ({
             </ul>
           </div>
 
-          {/*<div className="border-border/70 bg-card rounded-2xl border p-6 shadow-sm">
-            <h2 className="text-sm font-semibold tracking-wide uppercase">How to use it</h2>
-            <ul className="mt-4 space-y-3 text-sm leading-6">
-              {scenario.firstTimeGuidance.map((instruction) => (
-                <li key={instruction} className="text-muted-foreground">
-                  {instruction}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="border-border/70 bg-card rounded-2xl border p-6 shadow-sm">
-            <h2 className="text-sm font-semibold tracking-wide uppercase">Suggested questions</h2>
-            <ul className="mt-4 space-y-3 text-sm leading-6">
-              {scenario.suggestedQuestions.map((question) => (
-                <li key={question} className="text-muted-foreground">
-                  “{question}”
-                </li>
-              ))}
-            </ul>
-          </div>*/}
+          {requireMediaSetup && (
+            <PreconnectMediaSetup
+              requireMicrophone
+              requireCamera
+              showCameraPreview={showCameraPreview}
+              onReadinessChange={setCanStart}
+              onRegisterBeforeStart={(beforeStart) => {
+                beforeStartRef.current = beforeStart;
+              }}
+            />
+          )}
         </div>
 
         <div className="flex w-full flex-col justify-between gap-2 md:flex-row">
           <Button
             size="lg"
-            onClick={onStartCall}
+            disabled={!canStart || isStarting}
+            onClick={() => void handleStartCall()}
             className="mt-8 w-full max-w-sm rounded-full font-mono text-xs font-bold tracking-wider uppercase"
           >
-            {startButtonText}
+            {isStarting ? 'Starting...' : startButtonText}
           </Button>
           <Button
             size="lg"

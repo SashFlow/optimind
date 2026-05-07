@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { GenderFemaleIcon, GenderMaleIcon } from '@phosphor-icons/react';
 import { WelcomeImage } from '@/components/app/welcome-view';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,12 +21,14 @@ const modes = [
 
 const agents = [
   {
-    name: 'Sanjay',
+    name: 'Dr. Sanjay',
     url: '/sanjay.mp4',
+    icon: <GenderMaleIcon size={48} />,
   },
   {
-    name: 'Samira',
+    name: 'Dr. Samira',
     url: '/anjali.mp4',
+    icon: <GenderFemaleIcon size={48} />,
   },
 ];
 
@@ -100,7 +103,9 @@ export default function Page() {
                     {selectedMode === 'audio' ? (
                       <AudioWaveformPreview />
                     ) : (
-                      <AvatarPlaceholderPreview url={agent.url} />
+                      <div className="bg-muted/40 flex aspect-[3/2] w-full items-center justify-center gap-1 rounded-lg border px-4 py-3">
+                        {agent.icon}
+                      </div>
                     )}
                     <CardTitle className="text-center text-base">{agent.name}</CardTitle>
                   </CardHeader>

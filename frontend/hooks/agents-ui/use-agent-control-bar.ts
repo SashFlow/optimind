@@ -56,6 +56,7 @@ export interface UseInputControlsProps {
 
 export interface UseInputControlsReturn {
   microphoneTrack?: TrackReference;
+  cameraTrack?: TrackReference;
   microphoneToggle: ReturnType<typeof useTrackToggle<Track.Source.Microphone>>;
   cameraToggle: ReturnType<typeof useTrackToggle<Track.Source.Camera>>;
   screenShareToggle: ReturnType<typeof useTrackToggle<Track.Source.ScreenShare>>;
@@ -70,7 +71,7 @@ export function useInputControls({
   onDeviceError,
 }: UseInputControlsProps = {}): UseInputControlsReturn {
   const {
-    local: { microphoneTrack },
+    local: { microphoneTrack, cameraTrack },
   } = useSessionContext();
 
   const microphoneToggle = useTrackToggle({
@@ -151,6 +152,7 @@ export function useInputControls({
 
   return {
     microphoneTrack,
+    cameraTrack,
     cameraToggle: {
       ...cameraToggle,
       toggle: handleToggleCamera,

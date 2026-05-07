@@ -96,14 +96,19 @@ export function TileLayout({
   const [screenShareTrack] = useTracks([Track.Source.ScreenShare]);
   const cameraTrack: TrackReference | undefined = useLocalTrackRef(Track.Source.Camera);
 
+  const isAvatar = agentVideoTrack !== undefined;
   const isCameraEnabled = cameraTrack && !cameraTrack.publication.isMuted;
   const isScreenShareEnabled = screenShareTrack && !screenShareTrack.publication.isMuted;
+  const hasSecondaryVideo =
+    (cameraTrack && isCameraEnabled) || (screenShareTrack && isScreenShareEnabled);
+  const shouldSwapCameraToPrimary = isCameraEnabled;
   const hasSecondTile = isCameraEnabled || isScreenShareEnabled;
 
   const animationDelay = chatOpen ? 0 : 0.15;
-  const isAvatar = agentVideoTrack !== undefined;
   const videoWidth = agentVideoTrack?.publication.dimensions?.width ?? 0;
   const videoHeight = agentVideoTrack?.publication.dimensions?.height ?? 0;
+  const cameraWidth = cameraTrack?.publication.dimensions?.width ?? 0;
+  const cameraHeight = cameraTrack?.publication.dimensions?.height ?? 0;
 
   return (
     <div className="absolute inset-x-0 top-8 bottom-32 z-50 md:top-12 md:bottom-40">
@@ -119,7 +124,7 @@ export function TileLayout({
             ])}
           >
             <AnimatePresence mode="popLayout">
-              {!isAvatar && (
+              {!isAvatar && !shouldSwapCameraToPrimary && (
                 // Audio Agent
                 <motion.div
                   key="agent"
@@ -160,7 +165,7 @@ export function TileLayout({
                 </motion.div>
               )}
 
-              {isAvatar && (
+              {isAvatar && !shouldSwapCameraToPrimary && (
                 // Avatar Agent
                 <motion.div
                   key="avatar"
@@ -201,6 +206,31 @@ export function TileLayout({
                   />
                 </motion.div>
               )}
+
+              {shouldSwapCameraToPrimary && (
+                // Camera Agent
+                <motion.div
+                  key="camera-primary"
+                  layoutId="camera"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{
+                    ...ANIMATION_TRANSITION,
+                    delay: animationDelay,
+                  }}
+                  className={cn(
+                    'overflow-hidden bg-black drop-shadow-xl/80',
+                    chatOpen ? 'h-[90px] rounded-md' : 'h-auto w-full rounded-xl'
+                  )}
+                >
+                  <VideoTrack
+                    width={cameraWidth}
+                    height={cameraHeight}
+                    trackRef={cameraTrack}
+                    className={cn(chatOpen && 'size-[90px] object-cover')}
+                  />
+                </motion.div>
+              )}
             </AnimatePresence>
           </div>
 
@@ -211,13 +241,13 @@ export function TileLayout({
               !chatOpen && tileViewClassNames.secondTileChatClosed,
             ])}
           >
-            {/* Camera & Screen Share */}
+            {/* Secondary Tile */}
             <AnimatePresence>
-              {((cameraTrack && isCameraEnabled) || (screenShareTrack && isScreenShareEnabled)) && (
+              {shouldSwapCameraToPrimary ? (
                 <motion.div
-                  key="camera"
+                  key={isAvatar ? 'avatar-secondary' : 'audio-secondary'}
                   layout="position"
-                  layoutId="camera"
+                  layoutId={isAvatar ? 'avatar' : 'agent'}
                   initial={{
                     opacity: 0,
                     scale: 0,
@@ -236,13 +266,75 @@ export function TileLayout({
                   }}
                   className="aspect-square size-[90px] drop-shadow-lg/20"
                 >
-                  <VideoTrack
-                    trackRef={cameraTrack || screenShareTrack}
-                    width={(cameraTrack || screenShareTrack)?.publication.dimensions?.width ?? 0}
-                    height={(cameraTrack || screenShareTrack)?.publication.dimensions?.height ?? 0}
-                    className="bg-muted aspect-square size-[90px] rounded-md object-cover"
-                  />
+                  {isAvatar ? (
+                    <VideoTrack
+                      trackRef={agentVideoTrack}
+                      width={videoWidth}
+                      height={videoHeight}
+                      className="bg-muted aspect-square size-[90px] rounded-md object-cover"
+                    />
+                  ) : (
+                    <AudioVisualizer
+                      key="audio-visualizer-secondary"
+                      initial={{ scale: 1 }}
+                      animate={{ scale: 0.2 }}
+                      transition={{
+                        ...ANIMATION_TRANSITION,
+                        delay: animationDelay,
+                      }}
+                      audioVisualizerType={audioVisualizerType}
+                      audioVisualizerColor={audioVisualizerColor}
+                      audioVisualizerColorShift={audioVisualizerColorShift}
+                      audioVisualizerBarCount={audioVisualizerBarCount}
+                      audioVisualizerRadialBarCount={audioVisualizerRadialBarCount}
+                      audioVisualizerRadialRadius={audioVisualizerRadialRadius}
+                      audioVisualizerGridRowCount={audioVisualizerGridRowCount}
+                      audioVisualizerGridColumnCount={audioVisualizerGridColumnCount}
+                      audioVisualizerWaveLineWidth={audioVisualizerWaveLineWidth}
+                      isChatOpen
+                      className={cn(
+                        'absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2',
+                        'bg-background rounded-[50px] border border-transparent transition-[border,drop-shadow]',
+                        'border-input shadow-2xl/10'
+                      )}
+                      style={{ color: audioVisualizerColor }}
+                    />
+                  )}
                 </motion.div>
+              ) : (
+                hasSecondaryVideo && (
+                  <motion.div
+                    key="camera"
+                    layout="position"
+                    layoutId="camera"
+                    initial={{
+                      opacity: 0,
+                      scale: 0,
+                    }}
+                    animate={{
+                      opacity: 1,
+                      scale: 1,
+                    }}
+                    exit={{
+                      opacity: 0,
+                      scale: 0,
+                    }}
+                    transition={{
+                      ...ANIMATION_TRANSITION,
+                      delay: animationDelay,
+                    }}
+                    className="aspect-square size-[90px] drop-shadow-lg/20"
+                  >
+                    <VideoTrack
+                      trackRef={cameraTrack || screenShareTrack}
+                      width={(cameraTrack || screenShareTrack)?.publication.dimensions?.width ?? 0}
+                      height={
+                        (cameraTrack || screenShareTrack)?.publication.dimensions?.height ?? 0
+                      }
+                      className="bg-muted aspect-square size-[90px] rounded-md object-cover"
+                    />
+                  </motion.div>
+                )
               )}
             </AnimatePresence>
           </div>

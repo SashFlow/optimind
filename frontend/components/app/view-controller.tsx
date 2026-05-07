@@ -44,6 +44,10 @@ export function ViewController({ appConfig, scenario }: ViewControllerProps) {
   const { isConnected, start } = useSessionContext();
   const { resolvedTheme } = useTheme();
 
+  const handleStartCall = async () => {
+    await Promise.resolve(start());
+  };
+
   return (
     <AnimatePresence mode="wait">
       {/* Welcome view */}
@@ -53,7 +57,9 @@ export function ViewController({ appConfig, scenario }: ViewControllerProps) {
           {...VIEW_MOTION_PROPS}
           scenario={scenario}
           startButtonText={appConfig.startButtonText}
-          onStartCall={start}
+          onStartCall={handleStartCall}
+          requireMediaSetup={appConfig.requireMediaSetupBeforeStart}
+          showCameraPreview={appConfig.showWelcomeCameraPreview}
         />
       )}
       {/* Session view */}
@@ -78,6 +84,7 @@ export function ViewController({ appConfig, scenario }: ViewControllerProps) {
           audioVisualizerRadialBarCount={appConfig.audioVisualizerRadialBarCount}
           audioVisualizerRadialRadius={appConfig.audioVisualizerRadialRadius}
           audioVisualizerWaveLineWidth={appConfig.audioVisualizerWaveLineWidth}
+          forceEnableCameraOnConnect={appConfig.forceEnableCameraOnSessionView}
           className="fixed inset-0"
         />
       )}

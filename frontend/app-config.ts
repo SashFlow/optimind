@@ -7,6 +7,9 @@ export interface AppConfig {
   supportsVideoInput: boolean;
   supportsScreenShare: boolean;
   isPreConnectBufferEnabled: boolean;
+  requireMediaSetupBeforeStart: boolean;
+  showWelcomeCameraPreview: boolean;
+  forceEnableCameraOnSessionView: boolean;
 
   logo: string;
   startButtonText: string;
@@ -41,6 +44,9 @@ export const APP_CONFIG_DEFAULTS: AppConfig = {
   supportsVideoInput: true,
   supportsScreenShare: false,
   isPreConnectBufferEnabled: true,
+  requireMediaSetupBeforeStart: true,
+  showWelcomeCameraPreview: true,
+  forceEnableCameraOnSessionView: true,
 
   logo: '/lk-logo.svg',
   accent: '#002cf2',

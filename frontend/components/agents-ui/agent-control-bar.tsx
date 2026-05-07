@@ -213,6 +213,8 @@ export interface AgentControlBarProps extends UseInputControlsProps {
   onIsChatOpenChange?: (open: boolean) => void;
   /** The callback for when a device error occurs. */
   onDeviceError?: (error: { source: Track.Source; error: Error }) => void;
+  /** Whether to auto-enable camera each time the session connects. */
+  forceEnableCameraOnConnect?: boolean;
 }
 
 /**
@@ -245,6 +247,7 @@ export function AgentControlBar({
   isChatOpen = false,
   isConnected = false,
   saveUserChoices = true,
+  forceEnableCameraOnConnect = true,
   onDisconnect,
   onDeviceError,
   onIsChatOpenChange,
@@ -278,6 +281,21 @@ export function AgentControlBar({
   };
 
   const isEmpty = Object.values(visibleControls).every((value) => !value);
+  const hasAutoEnabledCameraRef = useRef(false);
+
+  useEffect(() => {
+    if (!isConnected) {
+      hasAutoEnabledCameraRef.current = false;
+      return;
+    }
+
+    if (!forceEnableCameraOnConnect || !visibleControls.camera || hasAutoEnabledCameraRef.current) {
+      return;
+    }
+
+    hasAutoEnabledCameraRef.current = true;
+    void cameraToggle.toggle(true);
+  }, [cameraToggle, forceEnableCameraOnConnect, isConnected, visibleControls.camera]);
 
   if (isEmpty) {
     console.warn('AgentControlBar: `visibleControls` contains only false values.');
