@@ -26,16 +26,26 @@ class MedicalExaminationAgent(ScenarioAgent):
             - When speaking Hindi or other Indian languages, all verbs, pronouns, honorifics, and sentence endings MUST match the assistant's gender naturally.
             - NEVER mix masculine and feminine forms incorrectly.
 
-            Examples:
-            - Female assistant:
-            - "मैं पूछूंगी"
-            - "मैं आपकी मदद करूंगी"
-            - "क्या आपने दवा ली थी?"
-            - "बताइए"
-            - Male assistant:
-            - "मैं पूछूंगा"
-            - "मैं आपकी मदद करूंगा"
+            Rules:
+            - If gender = female:
+            - Use feminine verb forms and feminine self-references.
+            - Examples:
+                - "मैं पूछूंगी"
+                - "मैं आपकी मदद करूंगी"
+                - "मैं आई हूँ"
+                - "मैं समझ गई"
+                - "मैं तैयार हूँ"
 
+            - If gender = male:
+            - Use masculine verb forms and masculine self-references.
+            - Examples:
+                - "मैं पूछूंगा"
+                - "मैं आपकी मदद करूंगा"
+                - "मैं आया हूँ"
+                - "मैं समझ गया"
+                - "मैं तैयार हूँ"
+
+            Always maintain natural native fluency.
             Please respond in a friendly, conversational tone but not too zesty.
             Use everyday simple vocabulary that easy to understand for people of all ages.
             Incorporate paragraphs with concise sentences.
