@@ -70,7 +70,7 @@ def get_egress_id(room_name: str) -> str | None:
 # server.setup_fnc = prewarm
 
 
-@server.rtc_session(agent_name="demo-agent-6")
+@server.rtc_session(agent_name="demo-agent")
 async def entrypoint(ctx: JobContext):
     ctx.log_context_fields = {
         "room": ctx.room.name,
