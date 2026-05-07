@@ -1,4 +1,3 @@
-# required fields
 api_key: livekit server api key. LIVEKIT_API_KEY env can be used instead
 api_secret: livekit server api secret. LIVEKIT_API_SECRET env can be used instead
 ws_url: livekit server websocket url. LIVEKIT_WS_URL can be used instead
