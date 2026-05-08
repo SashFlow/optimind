@@ -56,6 +56,8 @@ def set_egress_id(room_name: str, egress_id: str) -> None:
 
 
 def get_egress_id(room_name: str) -> str | None:
+    if room_name not in EGRESS_IDS:
+        return None
     id = EGRESS_IDS.get(room_name)
     del EGRESS_IDS[room_name]
     return id
@@ -79,9 +81,10 @@ async def entrypoint(ctx: JobContext):
             voice=agent["voice"],
         ),
         tools=[google.tools.GoogleSearch(), end_call],
-        turn_detection=MultilingualModel(),
+        # turn_detection=MultilingualModel(),
         vad=ai_coustics.VAD(),
         preemptive_generation=True,
+        resume_false_interruption=True,
     )
 
     false_interruption_task: asyncio.Task[None] | None = None
