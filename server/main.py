@@ -98,7 +98,8 @@ async def entrypoint(ctx: JobContext):
             logger.info(
                 "agent still listening after speaking; prompting for clarification"
             )
-            session.generate_reply(instructions=("Can you repeat the question."))
+            session.generate_reply(instructions=(
+                "Can you repeat the question."))
         except asyncio.CancelledError:
             # State changed before timeout, so this check is no longer needed.
             return
@@ -180,7 +181,8 @@ async def entrypoint(ctx: JobContext):
             room_options.audio_output = True
 
     await session.start(
-        agent=MedicalExaminationAgent(selected_agent, agent["gender"], language),
+        agent=MedicalExaminationAgent(
+            selected_agent, agent["gender"], language),
         room=ctx.room,
         room_options=room_options,
     )
@@ -197,7 +199,7 @@ async def entrypoint(ctx: JobContext):
                 preset=api.EncodingOptionsPreset.H264_720P_30,
                 file=EncodedFileOutput(
                     file_type=EncodedFileType.MP4,
-                    filepath=f"{ctx.room.name}/recording-{int(time.time())}.mp4",
+                    filepath=f"{ctx.room.name}/recording-session.mp4",
                     gcp=GCPUpload(
                         credentials=creds,
                         bucket=os.getenv("GCP_BUCKET_NAME", "").strip(),
