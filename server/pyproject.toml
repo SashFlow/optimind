@@ -13,6 +13,8 @@ dependencies = [
     "livekit-plugins-google>=1.5.4",
     "livekit-plugins-turn-detector>=1.5.4",
     "livekit-protocol>=1.1.5",
+    "psycopg[binary]>=3.2.10",
     "python-dotenv>=1.2.2",
+    "sqlalchemy>=2.0.41",
     "tzdata>=2026.1",
 ]

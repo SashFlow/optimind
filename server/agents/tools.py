@@ -1,5 +1,9 @@
 import asyncio
+import json
 import logging
+import os
+from urllib.parse import urlencode
+from urllib.request import urlopen
 
 from livekit import api
 from livekit.agents import RunContext, function_tool, get_job_context
@@ -60,3 +64,71 @@ async def transfer_to_human(ctx: RunContext) -> str:
     except Exception as e:
         logger.error(f"Failed to transfer call: {e}")
         return f"Error: Failed to transfer call - {e}"
+
+
+def get_centers_by_pin(pin: str) -> dict:
+    """Fetch nearby diagnostic centers for an Indian pincode using SerpAPI.
+
+    Returns a stable payload with `result`, `pin_code`, and `options` so callers
+    can safely consume API responses and fallback states.
+    """
+    normalized_pin = "".join(ch for ch in (pin or "") if ch.isdigit())
+    if len(normalized_pin) != 6:
+        return {
+            "result": "failed",
+            "pin_code": normalized_pin,
+            "options": [],
+            "error": "Invalid pincode. Please provide a 6-digit Indian pincode.",
+        }
+
+    api_key = os.getenv("SERP_API_KEY", "").strip(
+    ) or os.getenv("SERPAPI_API_KEY", "").strip()
+    if not api_key:
+        return {
+            "result": "failed",
+            "pin_code": normalized_pin,
+            "options": [],
+            "error": "SERP_API_KEY is not configured.",
+        }
+
+    params = {
+        "engine": "google_maps",
+        "q": f"diagnostic center near {normalized_pin} India",
+        "hl": "en",
+        "gl": "in",
+        "api_key": api_key,
+    }
+    url = f"https://serpapi.com/search.json?{urlencode(params)}"
+
+    try:
+        with urlopen(url, timeout=10) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except Exception as exc:
+        logger.exception(
+            "SerpAPI request failed for pincode %s", normalized_pin)
+        return {
+            "result": "failed",
+            "pin_code": normalized_pin,
+            "options": [],
+            "error": f"Unable to fetch centers from SerpAPI: {exc}",
+        }
+
+    local_results = payload.get("local_results", []) or []
+    options = []
+    for item in local_results[:5]:
+        options.append(
+            {
+                "name": item.get("title", "Unknown Center"),
+                "address": item.get("address", "Address unavailable"),
+                "distance_km": item.get("distance") or "N/A",
+                "rating": item.get("rating"),
+                "phone": item.get("phone"),
+            }
+        )
+
+    return {
+        "result": "success",
+        "pin_code": normalized_pin,
+        "options": options,
+        "source": "serpapi",
+    }

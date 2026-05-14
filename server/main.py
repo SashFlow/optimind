@@ -63,7 +63,7 @@ def get_egress_id(room_name: str) -> str | None:
     return id
 
 
-@server.rtc_session(agent_name="demo-agent")
+@server.rtc_session(agent_name="demo-agent-6")
 async def entrypoint(ctx: JobContext):
     lkapi = api.LiveKitAPI()
     egress = lkapi.egress

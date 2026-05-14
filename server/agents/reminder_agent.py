@@ -16,6 +16,7 @@ from client.appointment_db import (
     get_latest_confirmed_booking,
     get_user,
     is_slot_taken,
+    reschedule_appointment,
 )
 
 from .tools import get_centers_by_pin
@@ -187,83 +188,82 @@ class MedicalAppointmentAgent(ScenarioAgent):
                 - "मैं तैयार हूँ"
 
             TOOLS:
-            - validate_user
-            - get_medical_center
-            - get_available_slots
-            - book_appointment
-            - Greet the user and then call the end_call tool to end the call. 
+            - validate_user (to verify user identity)
+            - get_available_slots (to check slot availability on requested date)
+            - reschedule_appointment_tool (to reschedule to new date/time)
+            - end_call (to end conversation after greeting user)
             
-            - YOU MUST NEVER CALL THE END_CALL TOOL WITHOUT GREETING THE USER "Thank You". ALWAYS MAKE SURE TO END THE CONVERSATION ONCE THE QUESTIONS ARE ANSWERED AND ON A GOOD NOTE WITH A POLITE GREETING.
+            - YOU MUST NEVER CALL THE END_CALL TOOL WITHOUT GREETING THE USER "Thank You". 
+            - ALWAYS MAKE SURE TO END THE CONVERSATION ONCE THE RESCHEDULE IS CONFIRMED AND ON A GOOD NOTE WITH A POLITE GREETING.
+            - Use reschedule_appointment_tool ONLY AFTER validating user and confirming new date/time availability.
            
 
             CONVERSATION GUIDELINES:
 
-            "Hi, this is {name}, your virtual assistant, and I will help you schedule your medical appointment for the insurance process."
+            "Hi, this is {name}, your virtual assistant. I'm calling to confirm that your medical appointment is scheduled for [DATE] at [TIME]."
 
-            To begin, may I please have your registered mobile number?
-            
-            [Customer responds]
+            "Your appointment details are as follows:
+            - Date: [Appointment Date]
+            - Time: [Appointment Time]
+            - Type: [Home Collection / Center Visit]"
 
-            Thank you. Now, may I please confirm your date of birth?"
+            "When the technician arrives at your location, kindly call back on this number. Please note that the medical process will be conducted and recorded through a video call. A video call link will be shared with you through SMS or WhatsApp."
 
-            [Customer responds]
-            
-            Thank you.
-            
-            Would you prefer:
-                1. Home sample collection, or
-                2. Visit to a medical center?
-            IF HOME COLLECTION:
+            "During the process:
+            - Your height and weight will be measured
+            - Blood pressure will be checked
+            - Abdomen measurement will be conducted
+            - Blood sample collection will be completed"
 
-            Please share your area pincode.
+            "Our doctor will also join the video call to verify the procedure and ask a few health-related questions."
 
-            [Customer responds]
+            "Please ensure:
+            - Your phone is available during the appointment
+            - Internet connection is active for the video call
+            - You follow any fasting instructions shared earlier"
 
-            Thank you.
-            Now please share your complete address along with a nearby landmark.
-
-            [Customer responds]
-
-            Thank you.
-            Please let me know your preferred appointment date and time.
+            "May I confirm if you will be available for the appointment on [DATE] at [TIME]?"
 
             [Customer responds]
 
-            IF CENTER VISIT:
+            IF CUSTOMER CONFIRMS:
 
-            Please share your area pincode so I can check the nearest available medical center.
+            "Thank you for your cooperation. You will shortly receive reminder details via SMS or WhatsApp. Have a good day!"
 
-            [Customer responds]
+            Then call end_call to finish the conversation.
 
-            Thank you.
-            Please let me know your preferred appointment date and time.
+            IF CUSTOMER ASKS TO RESCHEDULE:
 
-            [Customer responds]
+            "I understand. I will help you reschedule your appointment."
 
-            Your appointment for the medical examination has been scheduled for:
+            "What date would you like to reschedule to? Please provide the date in DD-MM-YYYY format."
 
-            Date: [Appointment Date]
-            Time: [Appointment Time]
-            Type: [Home Collection / Center Visit]
+            [Customer provides new date]
 
-            As part of the medical process, the technician may conduct:
+            "Thank you. Now, what time would you prefer? Please provide the time in HH:MM format (e.g., 14:30 for 2:30 PM)."
 
-            * Height and weight measurement
-            * Blood pressure check
-            * Abdomen measurement
-            * Blood sample collection
+            [Customer provides new time]
 
-            Please note that the process may also be conducted through a recorded video call with doctor verification.
-            You will receive the appointment confirmation and video call details through SMS or WhatsApp shortly.
+            "And will this be a Home Collection or Center Visit?"
 
-            Do you need any additional help regarding your appointment?
+            [Customer confirms exam type]
 
-            [Customer responds]
-            
-            ANSWER QUESTIONS IF ANY
+            Then call reschedule_appointment_tool with the new date, time, and exam type.
 
-            END CALL WITH
-            Thank you for choosing us.
+            IF RESCHEDULE SUCCEEDS:
+
+            "Perfect! Your appointment has been successfully rescheduled to [NEW DATE] at [NEW TIME]. You will receive updated confirmation via SMS or WhatsApp."
+
+            IF RESCHEDULE FAILS:
+
+            Ask the customer to provide alternate date/time and try again, or offer to transfer to a human agent.
+
+            FINAL STEP:
+
+            Once appointment is confirmed or rescheduled, always end with:
+            "Thank you for choosing us. Have a great day!"
+
+            Then call end_call to close the conversation.
  """
         )
 
@@ -601,5 +601,135 @@ class MedicalAppointmentAgent(ScenarioAgent):
                 "Carry a valid photo ID.",
                 "Stay hydrated; fasting is not required unless informed separately.",
                 "You may receive confirmation on SMS or WhatsApp.",
+            ],
+        }
+
+    @function_tool()
+    async def reschedule_appointment_tool(
+        self,
+        context: RunContext,
+        phone_number: str,
+        dob: str,
+        new_date: str,
+        new_time: str,
+        exam_type: str,
+        pin_code: str = "",
+        address: str = "",
+    ) -> dict[str, Any]:
+        """Reschedule an existing appointment to a new date and time.
+
+        Args:
+            phone_number: User mobile number in India format.
+            dob: Date of birth in YYYY-MM-DD or DD-MM-YYYY.
+            new_date: New appointment date in YYYY-MM-DD or DD-MM-YYYY.
+            new_time: New appointment time in HH:MM format.
+            exam_type: Home Collection or Center Visit.
+            pin_code: Optional 6-digit pincode.
+            address: Optional address for Home Collection.
+        """
+        user_validation = await self.validate_user(
+            context=context,
+            phone_number=phone_number,
+            dob=dob,
+        )  # type: ignore
+        if not user_validation.get("is_valid"):
+            return {
+                "result": "failed",
+                "error": user_validation.get("error", "User validation failed."),
+            }
+
+        normalized_exam_type = _normalize_exam_type(exam_type)
+        if not normalized_exam_type:
+            return {
+                "result": "failed",
+                "error": "Invalid exam type. Please choose Home Collection or Center Visit.",
+            }
+
+        parsed_date = _parse_booking_date(new_date)
+        if parsed_date is None:
+            return {
+                "result": "failed",
+                "error": "Invalid date format. Please use DD-MM-YYYY or YYYY-MM-DD.",
+            }
+
+        parsed_time = _parse_booking_time(new_time)
+        if parsed_time is None:
+            return {
+                "result": "failed",
+                "error": "Invalid time format. Please use HH:MM (24-hour) format.",
+            }
+
+        hour, minute = parsed_time
+        if minute not in {0, SLOT_INTERVAL_MINUTES}:
+            return {
+                "result": "failed",
+                "error": "Appointments are available every 30 minutes only.",
+            }
+
+        date_obj = parsed_date.date()
+        appointment_dt = datetime(
+            year=date_obj.year,
+            month=date_obj.month,
+            day=date_obj.day,
+            hour=hour,
+            minute=minute,
+            tzinfo=INDIA_TZ,
+        )
+
+        if not _is_within_booking_window(appointment_dt):
+            return {
+                "result": "failed",
+                "error": f"Appointments can only be booked within the next {MAX_BOOKING_WINDOW_DAYS} days.",
+            }
+
+        if not _is_valid_same_day_timing(appointment_dt):
+            return {
+                "result": "failed",
+                "error": "Same-day appointments require at least a 2-hour lead time.",
+            }
+
+        normalized_time = f"{hour:02d}:{minute:02d}"
+        date_str = date_obj.isoformat()
+        valid_slots = _valid_slots_for_exam_type(normalized_exam_type)
+        if normalized_time not in valid_slots:
+            return {
+                "result": "failed",
+                "error": "Requested slot is outside service hours for this exam type.",
+            }
+
+        if _is_slot_taken(date=date_str, time=normalized_time, exam_type=normalized_exam_type):
+            return {
+                "result": "failed",
+                "error": "Requested slot is already booked.",
+                "alternate_slots": _suggest_next_slots(date=date_str, exam_type=normalized_exam_type),
+            }
+
+        try:
+            new_appointment = reschedule_appointment(
+                phone_number=user_validation["phone_number"],
+                dob=user_validation["dob"],
+                new_date=date_str,
+                new_time=normalized_time,
+                exam_type=normalized_exam_type,
+                pin_code=re.sub(r"\D", "", pin_code or ""),
+                address=address.strip(),
+            )
+        except Exception as e:
+            logger.exception("Reschedule failed: %s", e)
+            return {
+                "result": "failed",
+                "error": f"Failed to reschedule appointment: {e}",
+            }
+
+        if new_appointment.get("result") == "failed":
+            return new_appointment
+
+        return {
+            "result": "success",
+            "message": f"Appointment successfully rescheduled to {date_str} at {normalized_time}.",
+            "new_appointment": new_appointment,
+            "instructions": [
+                "Please update your calendar with the new appointment details.",
+                "You will receive updated confirmation via SMS or WhatsApp.",
             ],
         }
