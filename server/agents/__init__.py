@@ -5,34 +5,18 @@ from typing import TYPE_CHECKING, Optional
 
 from livekit.agents.voice import Agent
 
-from agents.medical_examinar import MedicalExaminationAgent
-
 from .common import extract_scenario_slug, resolve_room_metadata
-from .front_desk import FrontDeskAgent
-from .general_purpose import GeneralPurposeAgent
-from .medical_officer import MedicalOfficerAgent
-from .resturant_agent import ResturantAgent
-from .study_partner import StudyPartnerAgent, StudyPartnerUserData
 
 if TYPE_CHECKING:
     from livekit.agents import JobContext
+    from .study_partner import StudyPartnerUserData
 
 logger = logging.getLogger(__name__)
-
-AGENT_FACTORIES: dict[str, type[Agent]] = {
-    "general-purpose": GeneralPurposeAgent,
-    "medical-officer": MedicalOfficerAgent,
-    "front-desk-agent": FrontDeskAgent,
-    "resturant-agent": ResturantAgent,
-    "study-partner": StudyPartnerAgent,
-    "help-desk-partner": FrontDeskAgent,
-    "medical-examination": MedicalExaminationAgent,
-}
 
 
 def getUserData(
     metadata: str | None, ctx: Optional["JobContext"] = None
-) -> StudyPartnerUserData | None:
+) -> Optional["StudyPartnerUserData"]:
     """Return an initialised userdata instance for the resolved scenario slug.
 
     Only the study-partner scenario requires userdata (for flash card and quiz
@@ -43,13 +27,25 @@ def getUserData(
         ctx: JobContext for the current session. Stored on StudyPartnerUserData so
              its function tools can access the room for RPC calls.
     """
+    from .study_partner import StudyPartnerUserData
+
     slug = extract_scenario_slug(metadata)
     if slug == "study-partner":
         return StudyPartnerUserData(ctx=ctx)
     return None
 
 
-def get_agent(metadata: str | None):
+def get_agent(metadata: str | None) -> Agent:
+    from agents.medical_examinar import MedicalExaminationAgent
+    from agents.medical_appointment import MedicalAppointmentAgent
+    from .general_purpose import GeneralPurposeAgent
+
+    AGENT_FACTORIES: dict[str, type[Agent]] = {
+        "medical-examination": MedicalExaminationAgent,
+        "reminder-call": MedicalAppointmentAgent,
+        "medical-appointment": MedicalAppointmentAgent,
+    }
+
     slug = extract_scenario_slug(metadata)
     agent_factory = AGENT_FACTORIES.get(slug)
     if agent_factory is None:
@@ -66,5 +62,5 @@ def getAgent(metadata: str | None) -> Agent:
     return get_agent(metadata)
 
 
-def resolveRoomMetadata(metadata: str | None) -> tuple[str, str, str, str]:
+def resolveRoomMetadata(metadata: str | None) -> tuple[str, str, str, str, dict]:
     return resolve_room_metadata(metadata)

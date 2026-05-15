@@ -108,7 +108,9 @@ def _valid_slots_for_exam_type(exam_type: str) -> list[str]:
 
 
 def _is_slot_taken(date: str, time: str, exam_type: str) -> bool:
-    return is_slot_taken(appointment_date=date, appointment_time=time, exam_type=exam_type)
+    return is_slot_taken(
+        appointment_date=date, appointment_time=time, exam_type=exam_type
+    )
 
 
 def _suggest_next_slots(date: str, exam_type: str, limit: int = 3) -> list[str]:
@@ -142,8 +144,8 @@ def _build_appointment_id(date_str: str, time_str: str, exam_type: str) -> str:
     return f"APT-{compact_date}-{compact_time}-{mode}-{sequence:04d}"
 
 
-class MedicalAppointmentAgent(ScenarioAgent):
-    def __init__(self, name, gender, language) -> None:
+class ReminderAgent(ScenarioAgent):
+    def __init__(self, name, gender, language, validation_details) -> None:
         super().__init__(
             instructions=f"""
             ROLE:
@@ -151,7 +153,7 @@ class MedicalAppointmentAgent(ScenarioAgent):
             You are based out of India and talk to Indian native people so you must make sure you sound like an Indian Doctor with a thick accent.
             User has selected {language} as their primary language. YOU MUST CONVERSE IN {language}.
             
-            Today's Date is {datetime.now(ZoneInfo('Asia/Kolkata')).isoformat()}
+            Today's Date is {datetime.now(ZoneInfo("Asia/Kolkata")).isoformat()}
             
             RULES:
             - You must go through all the questions.
@@ -190,13 +192,22 @@ class MedicalAppointmentAgent(ScenarioAgent):
             TOOLS:
             - validate_user (to verify user identity)
             - get_available_slots (to check slot availability on requested date)
+            - get_medical_center (to find nearby centers for Center Visit)
+            - book_appointment (to book a new appointment)
             - reschedule_appointment_tool (to reschedule to new date/time)
+            - transfer_to_human (to transfer to a human agent)
             - end_call (to end conversation after greeting user)
             
             - YOU MUST NEVER CALL THE END_CALL TOOL WITHOUT GREETING THE USER "Thank You". 
             - ALWAYS MAKE SURE TO END THE CONVERSATION ONCE THE RESCHEDULE IS CONFIRMED AND ON A GOOD NOTE WITH A POLITE GREETING.
             - Use reschedule_appointment_tool ONLY AFTER validating user and confirming new date/time availability.
-           
+            - If you cannot help the user or they are frustrated, use transfer_to_human.
+            
+            VALIDATION DETAILS FOR CALLER:
+            {validation_details}
+
+            - Use the above deatils to validate the caller when they provide their phone number and date of birth. If the details do not match, politely inform the caller and end the call.
+
 
             CONVERSATION GUIDELINES:
 
@@ -266,6 +277,91 @@ class MedicalAppointmentAgent(ScenarioAgent):
             Then call end_call to close the conversation.
  """
         )
+        self.validation_details = validation_details
+
+    def _validate_and_check_slot(
+        self,
+        date: str,
+        time: str,
+        exam_type: str,
+    ) -> dict[str, Any]:
+        """Common logic to validate date, time, and slot availability."""
+        normalized_exam_type = _normalize_exam_type(exam_type)
+        if not normalized_exam_type:
+            return {
+                "result": "failed",
+                "error": "Invalid exam type. Use Home Collection or Center Visit.",
+            }
+
+        parsed_date = _parse_booking_date(date)
+        if parsed_date is None:
+            return {
+                "result": "failed",
+                "error": "Invalid date format. Use DD-MM-YYYY or YYYY-MM-DD.",
+            }
+
+        parsed_time = _parse_booking_time(time)
+        if parsed_time is None:
+            return {
+                "result": "failed",
+                "error": "Invalid time format. Use HH:MM (24-hour) or 10:30 AM format.",
+            }
+
+        hour, minute = parsed_time
+        if minute not in {0, SLOT_INTERVAL_MINUTES}:
+            return {
+                "result": "failed",
+                "error": "Appointments are available every 30 minutes only.",
+            }
+
+        date_obj = parsed_date.date()
+        appointment_dt = datetime(
+            year=date_obj.year,
+            month=date_obj.month,
+            day=date_obj.day,
+            hour=hour,
+            minute=minute,
+            tzinfo=INDIA_TZ,
+        )
+
+        if not _is_within_booking_window(appointment_dt):
+            return {
+                "result": "failed",
+                "error": f"Appointments can only be booked within the next {MAX_BOOKING_WINDOW_DAYS} days.",
+            }
+
+        if not _is_valid_same_day_timing(appointment_dt):
+            return {
+                "result": "failed",
+                "error": "Same-day appointments require at least a 2-hour lead time.",
+            }
+
+        normalized_time = f"{hour:02d}:{minute:02d}"
+        date_str = date_obj.isoformat()
+        valid_slots = _valid_slots_for_exam_type(normalized_exam_type)
+        if normalized_time not in valid_slots:
+            return {
+                "result": "failed",
+                "error": "Requested slot is outside service hours for this exam type.",
+            }
+
+        if _is_slot_taken(
+            date=date_str, time=normalized_time, exam_type=normalized_exam_type
+        ):
+            return {
+                "result": "failed",
+                "error": "Requested slot is already booked.",
+                "alternate_slots": _suggest_next_slots(
+                    date=date_str, exam_type=normalized_exam_type
+                ),
+            }
+
+        return {
+            "result": "success",
+            "date_str": date_str,
+            "normalized_time": normalized_time,
+            "normalized_exam_type": normalized_exam_type,
+        }
 
     @function_tool()
     async def validate_user(
@@ -310,21 +406,41 @@ class MedicalAppointmentAgent(ScenarioAgent):
                 "phone_number": normalized_phone,
             }
 
-        expected_profile = get_user(normalized_phone)
-        is_registered = expected_profile is not None and expected_profile["dob"] == dob_date.isoformat(
+        # Validate against provided session details
+        expected_phone = _normalize_phone(
+            self.validation_details.get("phone_number", "")
         )
+        expected_dob = self.validation_details.get("dob", "")
 
+        if normalized_phone != expected_phone:
+            return {
+                "is_registered": False,
+                "is_valid": True,
+                "error": f"The mobile number {phone_number} is not registered for this medical scheduling session.",
+                "phone_number": normalized_phone,
+            }
+
+        if dob_date.isoformat() != expected_dob:
+            return {
+                "is_registered": False,
+                "is_valid": True,
+                "error": "The date of birth provided does not match our records.",
+                "phone_number": normalized_phone,
+                "dob": dob_date.isoformat(),
+            }
+
+        expected_profile = get_user(normalized_phone) or self.validation_details
         active_booking = get_latest_confirmed_booking(
             phone_number=normalized_phone,
             dob=dob_date.isoformat(),
         )
 
         return {
-            "is_registered": is_registered,
+            "is_registered": True,
             "is_valid": True,
             "phone_number": normalized_phone,
             "dob": dob_date.isoformat(),
-            "profile": expected_profile or {},
+            "profile": expected_profile,
             "has_active_booking": active_booking is not None,
             "active_booking": active_booking or {},
         }
@@ -360,7 +476,9 @@ class MedicalAppointmentAgent(ScenarioAgent):
         slots = [
             slot
             for slot in _valid_slots_for_exam_type(normalized_exam_type)
-            if not _is_slot_taken(date=date_str, time=slot, exam_type=normalized_exam_type)
+            if not _is_slot_taken(
+                date=date_str, time=slot, exam_type=normalized_exam_type
+            )
         ]
 
         if parsed_date.date() == datetime.now(INDIA_TZ).date():
@@ -433,8 +551,6 @@ class MedicalAppointmentAgent(ScenarioAgent):
         exam_type: str,
         pin_code: str = "",
         address: str = "",
-        landmark: str = "",
-        center_name: str = "",
     ) -> dict[str, Any]:
         """Reserve an appointment for a caller.
 
@@ -451,8 +567,6 @@ class MedicalAppointmentAgent(ScenarioAgent):
             exam_type: Home Collection / Center Visit.
             pin_code: Optional 6-digit pincode.
             address: Required for Home Collection.
-            landmark: Optional landmark for Home Collection.
-            center_name: Optional center name for Center Visit.
         """
         user_validation = await self.validate_user(
             context=context,
@@ -466,69 +580,17 @@ class MedicalAppointmentAgent(ScenarioAgent):
                 "details": user_validation,
             }
 
-        normalized_exam_type = _normalize_exam_type(exam_type)
-        if not normalized_exam_type:
-            return {
-                "result": "failed",
-                "error": "Invalid exam type. Please choose Home Collection or Center Visit.",
-            }
-
-        parsed_date = _parse_booking_date(date)
-        if parsed_date is None:
-            return {
-                "result": "failed",
-                "error": "Invalid date format. Please use DD-MM-YYYY or YYYY-MM-DD.",
-            }
-
-        parsed_time = _parse_booking_time(time)
-        if parsed_time is None:
-            return {
-                "result": "failed",
-                "error": "Invalid time format. Please use HH:MM (24-hour) or 10:30 AM format.",
-            }
-
-        hour, minute = parsed_time
-        if minute not in {0, SLOT_INTERVAL_MINUTES}:
-            return {
-                "result": "failed",
-                "error": "Appointments are available every 30 minutes only.",
-            }
-
-        date_obj = parsed_date.date()
-        appointment_dt = datetime(
-            year=date_obj.year,
-            month=date_obj.month,
-            day=date_obj.day,
-            hour=hour,
-            minute=minute,
-            tzinfo=INDIA_TZ,
+        slot_check = self._validate_and_check_slot(
+            date=date,
+            time=time,
+            exam_type=exam_type,
         )
+        if slot_check["result"] == "failed":
+            return slot_check
 
-        if not _is_within_booking_window(appointment_dt):
-            return {
-                "result": "failed",
-                "error": f"Appointments can only be booked within the next {MAX_BOOKING_WINDOW_DAYS} days.",
-            }
-
-        if not _is_valid_same_day_timing(appointment_dt):
-            return {
-                "result": "failed",
-                "error": "Same-day appointments require at least a 2-hour lead time.",
-            }
-
-        normalized_time = f"{hour:02d}:{minute:02d}"
-        date_str = date_obj.isoformat()
-        valid_slots = _valid_slots_for_exam_type(normalized_exam_type)
-        if normalized_time not in valid_slots:
-            return {
-                "result": "failed",
-                "error": "Requested slot is outside service hours for this exam type.",
-                "service_hours": {
-                    "exam_type": normalized_exam_type,
-                    "first_slot": valid_slots[0],
-                    "last_slot": valid_slots[-1],
-                },
-            }
+        date_str = slot_check["date_str"]
+        normalized_time = slot_check["normalized_time"]
+        normalized_exam_type = slot_check["normalized_exam_type"]
 
         if normalized_exam_type == "Home Collection" and not address.strip():
             return {
@@ -543,27 +605,6 @@ class MedicalAppointmentAgent(ScenarioAgent):
                 "error": "Pin code must be a 6-digit number.",
             }
 
-        # if normalized_exam_type == "Center Visit" and normalized_pin:
-        #     center_result = await self.get_medical_center(context=context, pin_code=normalized_pin)
-        #     if center_result.get("result") == "failed":
-        #         return center_result
-
-        #     available_centers = [c["name"]
-        #                          for c in center_result.get("options", [])]
-        #     if center_name.strip() and center_name.strip() not in available_centers:
-        #         return {
-        #             "result": "failed",
-        #             "error": "Requested center is not available for the provided pincode.",
-        #             "available_centers": available_centers,
-        #         }
-
-        if _is_slot_taken(date=date_str, time=normalized_time, exam_type=normalized_exam_type):
-            return {
-                "result": "failed",
-                "error": "Requested slot is already booked.",
-                "alternate_slots": _suggest_next_slots(date=date_str, exam_type=normalized_exam_type),
-            }
-
         appointment_id = _build_appointment_id(
             date_str=date_str,
             time_str=normalized_time,
@@ -573,14 +614,14 @@ class MedicalAppointmentAgent(ScenarioAgent):
             "appointment_id": appointment_id,
             "phone_number": user_validation["phone_number"],
             "dob": user_validation["dob"],
-            "full_name": user_validation.get("profile", {}).get("full_name", "Unknown User"),
+            "full_name": user_validation.get("profile", {}).get(
+                "full_name", "Unknown User"
+            ),
             "date": date_str,
             "time": normalized_time,
             "exam_type": normalized_exam_type,
             "pin_code": normalized_pin,
             "address": address.strip(),
-            "landmark": landmark.strip(),
-            "center_name": center_name.strip(),
             "status": "confirmed",
             "created_at": datetime.now(INDIA_TZ).isoformat(),
         }
@@ -590,7 +631,9 @@ class MedicalAppointmentAgent(ScenarioAgent):
             return {
                 "result": "failed",
                 "error": "Requested slot is already booked.",
-                "alternate_slots": _suggest_next_slots(date=date_str, exam_type=normalized_exam_type),
+                "alternate_slots": _suggest_next_slots(
+                    date=date_str, exam_type=normalized_exam_type
+                ),
             }
 
         return {
@@ -638,71 +681,21 @@ class MedicalAppointmentAgent(ScenarioAgent):
                 "error": user_validation.get("error", "User validation failed."),
             }
 
-        normalized_exam_type = _normalize_exam_type(exam_type)
-        if not normalized_exam_type:
-            return {
-                "result": "failed",
-                "error": "Invalid exam type. Please choose Home Collection or Center Visit.",
-            }
+        # If exam_type is not provided, try to get it from the active booking
+        if not exam_type and user_validation.get("has_active_booking"):
+            exam_type = user_validation["active_booking"].get("exam_type", "")
 
-        parsed_date = _parse_booking_date(new_date)
-        if parsed_date is None:
-            return {
-                "result": "failed",
-                "error": "Invalid date format. Please use DD-MM-YYYY or YYYY-MM-DD.",
-            }
-
-        parsed_time = _parse_booking_time(new_time)
-        if parsed_time is None:
-            return {
-                "result": "failed",
-                "error": "Invalid time format. Please use HH:MM (24-hour) format.",
-            }
-
-        hour, minute = parsed_time
-        if minute not in {0, SLOT_INTERVAL_MINUTES}:
-            return {
-                "result": "failed",
-                "error": "Appointments are available every 30 minutes only.",
-            }
-
-        date_obj = parsed_date.date()
-        appointment_dt = datetime(
-            year=date_obj.year,
-            month=date_obj.month,
-            day=date_obj.day,
-            hour=hour,
-            minute=minute,
-            tzinfo=INDIA_TZ,
+        slot_check = self._validate_and_check_slot(
+            date=new_date,
+            time=new_time,
+            exam_type=exam_type,
         )
+        if slot_check["result"] == "failed":
+            return slot_check
 
-        if not _is_within_booking_window(appointment_dt):
-            return {
-                "result": "failed",
-                "error": f"Appointments can only be booked within the next {MAX_BOOKING_WINDOW_DAYS} days.",
-            }
-
-        if not _is_valid_same_day_timing(appointment_dt):
-            return {
-                "result": "failed",
-                "error": "Same-day appointments require at least a 2-hour lead time.",
-            }
-
-        normalized_time = f"{hour:02d}:{minute:02d}"
-        date_str = date_obj.isoformat()
-        valid_slots = _valid_slots_for_exam_type(normalized_exam_type)
-        if normalized_time not in valid_slots:
-            return {
-                "result": "failed",
-                "error": "Requested slot is outside service hours for this exam type.",
-            }
-
-        if _is_slot_taken(date=date_str, time=normalized_time, exam_type=normalized_exam_type):
-            return {
-                "result": "failed",
-                "error": "Requested slot is already booked.",
-                "alternate_slots": _suggest_next_slots(date=date_str, exam_type=normalized_exam_type),
-            }
+        date_str = slot_check["date_str"]
+        normalized_time = slot_check["normalized_time"]
+        normalized_exam_type = slot_check["normalized_exam_type"]
 
         try:
             new_appointment = reschedule_appointment(

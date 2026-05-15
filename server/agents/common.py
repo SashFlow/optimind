@@ -9,6 +9,19 @@ from typing import Any
 DEFAULT_SCENARIO = "medical-examination"
 DEFAULT_LANGUAGE = "English"
 DEFAULT_NAME = "Sanjay"
+DEFAULT_PERSONA = "9876543210"
+PERSONAS = {
+    "9876543210": {
+        "phone_number": "9876543210",
+        "full_name": "Rohit Sharma",
+        "dob": "1992-08-15",
+    },
+    "9876500001": {
+        "phone_number": "9876500001",
+        "full_name": "Priya Nair",
+        "dob": "1995-01-20",
+    },
+}
 CURRENT_DATE = datetime.now(tz=timezone.utc).date().isoformat()
 INTERACTION_MODES = {"audio", "video"}
 INTERACTION_MODE_BY_SCENARIO_TYPE = {
@@ -166,10 +179,10 @@ def rows_from_mapping(mapping: Mapping[str, Any]) -> tuple[WidgetField, ...]:
     )
 
 
-def resolve_metadata_payload(metadata: str | None) -> tuple[str, str, str, str]:
+def resolve_metadata_payload(metadata: str | None) -> tuple[str, str, str, str, dict]:
     raw_metadata = (metadata or "").strip()
     if not raw_metadata:
-        return "audio", DEFAULT_SCENARIO, DEFAULT_NAME, DEFAULT_LANGUAGE
+        return "audio", DEFAULT_SCENARIO, DEFAULT_NAME, DEFAULT_LANGUAGE, {}
 
     if raw_metadata.startswith("{"):
         try:
@@ -205,8 +218,9 @@ def resolve_metadata_payload(metadata: str | None) -> tuple[str, str, str, str]:
 
                 agent_name = payload.get("selectedAgent", DEFAULT_NAME)
                 language = payload.get("language", DEFAULT_LANGUAGE)
+                persona = PERSONAS[payload.get("persona", DEFAULT_PERSONA)]
 
-                return interaction_mode, slug, agent_name, language
+                return interaction_mode, slug, agent_name, language, persona
 
     for prefix, interaction_mode in (
         ("video-", "video"),
@@ -221,17 +235,18 @@ def resolve_metadata_payload(metadata: str | None) -> tuple[str, str, str, str]:
                 slug or DEFAULT_SCENARIO,
                 DEFAULT_NAME,
                 DEFAULT_LANGUAGE,
+                {},
             )
 
-    return "audio", raw_metadata, DEFAULT_NAME, DEFAULT_LANGUAGE
+    return "audio", raw_metadata, DEFAULT_NAME, DEFAULT_LANGUAGE, {}
 
 
 def extract_scenario_slug(metadata: str | None) -> str:
-    _, scenario_slug, _, _ = resolve_metadata_payload(metadata)
+    _, scenario_slug, _, _, _ = resolve_metadata_payload(metadata)
     return scenario_slug
 
 
-def resolve_room_metadata(metadata: str | None) -> tuple[str, str, str, str]:
+def resolve_room_metadata(metadata: str | None) -> tuple[str, str, str, str, dict]:
     return resolve_metadata_payload(metadata)
 
 

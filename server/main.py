@@ -21,10 +21,7 @@ from livekit.protocol.egress import (
     StopEgressRequest,
 )
 from livekit.agents.voice import AgentSession, AgentStateChangedEvent
-from livekit.plugins import anam, google, ai_coustics
-from livekit.plugins.turn_detector.multilingual import MultilingualModel
 from agents.common import resolve_metadata_payload
-from agents.medical_examinar import MedicalExaminationAgent
 from agents.tools import end_call
 
 load_dotenv()
@@ -65,13 +62,18 @@ def get_egress_id(room_name: str) -> str | None:
 
 @server.rtc_session(agent_name="demo-agent-6")
 async def entrypoint(ctx: JobContext):
-    lkapi = api.LiveKitAPI()
-    egress = lkapi.egress
+    from livekit.plugins import anam, google, ai_coustics
+    from agents.medical_examinar import MedicalExaminationAgent
+    from agents.reminder_agent import ReminderAgent
+    from agents.medical_appointment import MedicalAppointmentAgent
+
+    # lkapi = api.LiveKitAPI()
+    # egress = lkapi.egress
     ctx.log_context_fields = {
         "room": ctx.room.name,
     }
-    interaction_mode, _, selected_agent, language = resolve_metadata_payload(
-        ctx.job.metadata
+    interaction_mode, slug, selected_agent, language, persona = (
+        resolve_metadata_payload(ctx.job.metadata)
     )
     agent = AGENT_LIB[selected_agent]
     session = AgentSession(
@@ -98,8 +100,7 @@ async def entrypoint(ctx: JobContext):
             logger.info(
                 "agent still listening after speaking; prompting for clarification"
             )
-            session.generate_reply(instructions=(
-                "Can you repeat the question."))
+            session.generate_reply(instructions=("Can you repeat the question."))
         except asyncio.CancelledError:
             # State changed before timeout, so this check is no longer needed.
             return
@@ -125,14 +126,14 @@ async def entrypoint(ctx: JobContext):
         logger.info("false positive interruption, resuming")
         session.generate_reply(instructions=ev.extra_instructions or NOT_GIVEN)
 
-    @session.on("close")
-    def _on_close():
-        async def cleanup():
-            await egress.stop_egress(
-                stop=StopEgressRequest(egress_id=get_egress_id(ctx.room.name))
-            )
+    # @session.on("close")
+    # def _on_close():
+    #     async def cleanup():
+    #         await egress.stop_egress(
+    #             stop=StopEgressRequest(egress_id=get_egress_id(ctx.room.name))
+    #         )
 
-        asyncio.create_task(cleanup())
+    #     asyncio.create_task(cleanup())
 
     use_avatar = interaction_mode == "video"
     avatar_started = False
@@ -180,34 +181,44 @@ async def entrypoint(ctx: JobContext):
             # Keep the user experience alive even when avatar startup fails.
             room_options.audio_output = True
 
+    if slug == "medical-examination":
+        agent = MedicalExaminationAgent(selected_agent, agent["gender"], language)
+    elif slug == "medical-appointment":
+        agent = MedicalAppointmentAgent(
+            selected_agent, agent["gender"], language, validation_details=persona
+        )
+    else:
+        agent = ReminderAgent(
+            selected_agent, agent["gender"], language, validation_details=persona
+        )
+
     await session.start(
-        agent=MedicalExaminationAgent(
-            selected_agent, agent["gender"], language),
+        agent=agent,
         room=ctx.room,
         room_options=room_options,
     )
 
-    creds = None
-    with open("./creds.json", "r") as f:
-        creds = f.read()
-    if creds:
-        response = await egress.start_room_composite_egress(
-            start=RoomCompositeEgressRequest(
-                room_name=ctx.room.name,
-                audio_only=False,
-                layout="grid",
-                preset=api.EncodingOptionsPreset.H264_720P_30,
-                file=EncodedFileOutput(
-                    file_type=EncodedFileType.MP4,
-                    filepath=f"{ctx.room.name}/recording-session.mp4",
-                    gcp=GCPUpload(
-                        credentials=creds,
-                        bucket=os.getenv("GCP_BUCKET_NAME", "").strip(),
-                    ),
-                ),
-            )
-        )
-        set_egress_id(ctx.room.name, response.egress_id)
+    # creds = None
+    # with open("./creds.json", "r") as f:
+    #     creds = f.read()
+    # if creds:
+    #     response = await egress.start_room_composite_egress(
+    #         start=RoomCompositeEgressRequest(
+    #             room_name=ctx.room.name,
+    #             audio_only=False,
+    #             layout="grid",
+    #             preset=api.EncodingOptionsPreset.H264_720P_30,
+    #             file=EncodedFileOutput(
+    #                 file_type=EncodedFileType.MP4,
+    #                 filepath=f"{ctx.room.name}/recording-session.mp4",
+    #                 gcp=GCPUpload(
+    #                     credentials=creds,
+    #                     bucket=os.getenv("GCP_BUCKET_NAME", "").strip(),
+    #                 ),
+    #             ),
+    #         )
+    #     )
+    #     set_egress_id(ctx.room.name, response.egress_id)
     await ctx.connect()
 
 

@@ -14,8 +14,7 @@ def _engine() -> Engine:
     global _ENGINE
     database_url = os.getenv("DATABASE_URL", "").strip()
     if not database_url:
-        raise RuntimeError(
-            "DATABASE_URL is required for appointment database access.")
+        raise RuntimeError("DATABASE_URL is required for appointment database access.")
 
     if _ENGINE is None:
         _ENGINE = create_engine(
@@ -59,13 +58,17 @@ def _row_to_dict(row: Any) -> dict[str, Any]:
 
 def get_user(phone_number: str) -> dict[str, Any] | None:
     with _engine().begin() as conn:
-        row = conn.execute(
-            text(
-                "SELECT phone_number, full_name, dob "
-                "FROM registered_users WHERE phone_number = :phone_number"
-            ),
-            {"phone_number": phone_number},
-        ).mappings().first()
+        row = (
+            conn.execute(
+                text(
+                    "SELECT phone_number, full_name, dob "
+                    "FROM registered_users WHERE phone_number = :phone_number"
+                ),
+                {"phone_number": phone_number},
+            )
+            .mappings()
+            .first()
+        )
         if not row:
             return None
         user = dict(row)
@@ -76,9 +79,10 @@ def get_user(phone_number: str) -> dict[str, Any] | None:
 
 def get_latest_confirmed_booking(phone_number: str, dob: str) -> dict[str, Any] | None:
     with _engine().begin() as conn:
-        row = conn.execute(
-            text(
-                """
+        row = (
+            conn.execute(
+                text(
+                    """
                 SELECT id, phone_number, full_name, dob, appointment_date, appointment_time,
                        exam_type, pin_code, address, "createdAt", "updatedAt"
                 FROM appointments
@@ -86,9 +90,12 @@ def get_latest_confirmed_booking(phone_number: str, dob: str) -> dict[str, Any] 
                 ORDER BY "createdAt" DESC
                 LIMIT 1
                 """
-            ),
-            {"phone_number": phone_number, "dob": dob},
-        ).mappings().first()
+                ),
+                {"phone_number": phone_number, "dob": dob},
+            )
+            .mappings()
+            .first()
+        )
         return _row_to_dict(row) if row else None
 
 
@@ -116,21 +123,26 @@ def is_slot_taken(appointment_date: str, appointment_time: str, exam_type: str) 
 
 def get_daily_booking_count(appointment_date: str) -> int:
     with _engine().begin() as conn:
-        row = conn.execute(
-            text(
-                "SELECT COUNT(*) AS total "
-                "FROM appointments WHERE appointment_date = :appointment_date"
-            ),
-            {"appointment_date": appointment_date},
-        ).mappings().first()
+        row = (
+            conn.execute(
+                text(
+                    "SELECT COUNT(*) AS total "
+                    "FROM appointments WHERE appointment_date = :appointment_date"
+                ),
+                {"appointment_date": appointment_date},
+            )
+            .mappings()
+            .first()
+        )
         return int(row["total"]) if row else 0
 
 
 def create_appointment(payload: dict[str, Any]) -> dict[str, Any]:
     with _engine().begin() as conn:
-        inserted = conn.execute(
-            text(
-                """
+        inserted = (
+            conn.execute(
+                text(
+                    """
                 INSERT INTO appointments(
                     dob,
                     phone_number,
@@ -155,9 +167,12 @@ def create_appointment(payload: dict[str, Any]) -> dict[str, Any]:
                 RETURNING id, phone_number, full_name, dob, appointment_date, appointment_time,
                           exam_type, pin_code, address, "createdAt", "updatedAt"
                 """
-            ),
-            payload,
-        ).mappings().first()
+                ),
+                payload,
+            )
+            .mappings()
+            .first()
+        )
         return _row_to_dict(inserted)
 
 
@@ -185,14 +200,19 @@ def reschedule_appointment(
         New appointment record or error dict.
     """
     with _engine().begin() as conn:
-        old_appointment = conn.execute(
-            text(
-                """SELECT id, phone_number, full_name FROM appointments
+        old_appointment = (
+            conn.execute(
+                text(
+                    """SELECT id, phone_number, full_name, pin_code, address, exam_type 
+                   FROM appointments
                    WHERE phone_number = :phone_number AND dob = :dob
                    ORDER BY \"createdAt\" DESC LIMIT 1"""
-            ),
-            {"phone_number": phone_number, "dob": dob},
-        ).mappings().first()
+                ),
+                {"phone_number": phone_number, "dob": dob},
+            )
+            .mappings()
+            .first()
+        )
 
         if not old_appointment:
             return {
@@ -201,10 +221,14 @@ def reschedule_appointment(
             }
 
         full_name = old_appointment["full_name"]
+        final_exam_type = exam_type or old_appointment["exam_type"]
+        final_pin_code = pin_code or old_appointment["pin_code"]
+        final_address = address or old_appointment["address"]
 
-        new_appointment = conn.execute(
-            text(
-                """
+        new_appointment = (
+            conn.execute(
+                text(
+                    """
                 INSERT INTO appointments(
                     dob,
                     phone_number,
@@ -229,18 +253,25 @@ def reschedule_appointment(
                 RETURNING id, phone_number, full_name, dob, appointment_date, appointment_time,
                           exam_type, pin_code, address, "createdAt", "updatedAt"
                 """
-            ),
-            {
-                "dob": dob,
-                "phone_number": phone_number,
-                "full_name": full_name,
-                "new_date": new_date,
-                "new_time": new_time,
-                "exam_type": exam_type,
-                "pin_code": pin_code or "",
-                "address": address or "",
-                "created_at": datetime.now().isoformat(),
-            },
-        ).mappings().first()
+                ),
+                {
+                    "dob": dob,
+                    "phone_number": phone_number,
+                    "full_name": full_name,
+                    "new_date": new_date,
+                    "new_time": new_time,
+                    "exam_type": final_exam_type,
+                    "pin_code": final_pin_code or "",
+                    "address": final_address or "",
+                    "created_at": datetime.now().isoformat(),
+                },
+            )
+            .mappings()
+            .first()
+        )
 
-    return _row_to_dict(new_appointment) if new_appointment else {"result": "failed", "error": "Failed to create new appointment."}
+    return (
+        _row_to_dict(new_appointment)
+        if new_appointment
+        else {"result": "failed", "error": "Failed to create new appointment."}
+    )
