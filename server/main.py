@@ -1,8 +1,6 @@
 import logging
 import asyncio
 import os
-import time
-
 from dotenv import load_dotenv
 from livekit.agents import (
     NOT_GIVEN,
@@ -60,15 +58,15 @@ def get_egress_id(room_name: str) -> str | None:
     return id
 
 
-@server.rtc_session(agent_name="demo-agent-6")
+@server.rtc_session(agent_name="demo-agent")
 async def entrypoint(ctx: JobContext):
     from livekit.plugins import anam, google, ai_coustics
     from agents.medical_examinar import MedicalExaminationAgent
     from agents.reminder_agent import ReminderAgent
     from agents.medical_appointment import MedicalAppointmentAgent
 
-    # lkapi = api.LiveKitAPI()
-    # egress = lkapi.egress
+    lkapi = api.LiveKitAPI()
+    egress = lkapi.egress
     ctx.log_context_fields = {
         "room": ctx.room.name,
     }
@@ -126,14 +124,14 @@ async def entrypoint(ctx: JobContext):
         logger.info("false positive interruption, resuming")
         session.generate_reply(instructions=ev.extra_instructions or NOT_GIVEN)
 
-    # @session.on("close")
-    # def _on_close():
-    #     async def cleanup():
-    #         await egress.stop_egress(
-    #             stop=StopEgressRequest(egress_id=get_egress_id(ctx.room.name))
-    #         )
+    @session.on("close")
+    def _on_close():
+        async def cleanup():
+            await egress.stop_egress(
+                stop=StopEgressRequest(egress_id=get_egress_id(ctx.room.name))
+            )
 
-    #     asyncio.create_task(cleanup())
+        asyncio.create_task(cleanup())
 
     use_avatar = interaction_mode == "video"
     avatar_started = False
@@ -198,27 +196,27 @@ async def entrypoint(ctx: JobContext):
         room_options=room_options,
     )
 
-    # creds = None
-    # with open("./creds.json", "r") as f:
-    #     creds = f.read()
-    # if creds:
-    #     response = await egress.start_room_composite_egress(
-    #         start=RoomCompositeEgressRequest(
-    #             room_name=ctx.room.name,
-    #             audio_only=False,
-    #             layout="grid",
-    #             preset=api.EncodingOptionsPreset.H264_720P_30,
-    #             file=EncodedFileOutput(
-    #                 file_type=EncodedFileType.MP4,
-    #                 filepath=f"{ctx.room.name}/recording-session.mp4",
-    #                 gcp=GCPUpload(
-    #                     credentials=creds,
-    #                     bucket=os.getenv("GCP_BUCKET_NAME", "").strip(),
-    #                 ),
-    #             ),
-    #         )
-    #     )
-    #     set_egress_id(ctx.room.name, response.egress_id)
+    creds = None
+    with open("./creds.json", "r") as f:
+        creds = f.read()
+    if creds:
+        response = await egress.start_room_composite_egress(
+            start=RoomCompositeEgressRequest(
+                room_name=ctx.room.name,
+                audio_only=False,
+                layout="grid",
+                preset=api.EncodingOptionsPreset.H264_720P_30,
+                file=EncodedFileOutput(
+                    file_type=EncodedFileType.MP4,
+                    filepath=f"{ctx.room.name}/recording-session.mp4",
+                    gcp=GCPUpload(
+                        credentials=creds,
+                        bucket=os.getenv("GCP_BUCKET_NAME", "").strip(),
+                    ),
+                ),
+            )
+        )
+        set_egress_id(ctx.room.name, response.egress_id)
     await ctx.connect()
 
 
