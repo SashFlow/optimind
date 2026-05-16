@@ -112,10 +112,22 @@ def _is_slot_taken(date: str, time: str, exam_type: str) -> bool:
     )
 
 
-def _suggest_next_slots(date: str, exam_type: str, limit: int = 3) -> list[str]:
+def _suggest_next_slots(date_str: str, exam_type: str, limit: int = 3) -> list[str]:
     options: list[str] = []
+    now = datetime.now(INDIA_TZ)
+    is_today = date_str == now.date().isoformat()
+
     for slot in _valid_slots_for_exam_type(exam_type):
-        if not _is_slot_taken(date=date, time=slot, exam_type=exam_type):
+        if is_today:
+            slot_dt = datetime.combine(
+                now.date(),
+                datetime.strptime(slot, "%H:%M").time(),
+                tzinfo=INDIA_TZ,
+            )
+            if slot_dt < now + timedelta(hours=2):
+                continue
+
+        if not _is_slot_taken(date=date_str, time=slot, exam_type=exam_type):
             options.append(slot)
         if len(options) >= limit:
             break
@@ -149,8 +161,43 @@ class MedicalAppointmentAgent(ScenarioAgent):
             instructions=f"""
             ROLE:
             You are {name}, a {gender} Scheduling Assistant. You help people schedule medical appointments for their insurance process in India.
+            You are based out of India and talk to Indian native people so you must make sure you sound like an Indian Doctor with a thick accent.
             User has selected {language} as their primary language. YOU MUST CONVERSE IN {language}.
             
+            RULES:
+            - You must go through all the questions.
+            - Please respond in a friendly, conversational tone but not too zesty.
+            - Use everyday simple vocabulary that easy to understand for people of all ages.
+            - Paragraphs are only 1-2 sentences long.
+            - User can provide or correct information in any order, so be sure to ask all the questions and confirm the answers at the end.
+            - Make sure the wordings are less predictable, has high burstiness, and high stylometric.
+            - Wait after each question, and give ample time for user to respond to your questions and dont group the questions together.
+            - Avoid translating abbreviations unless medically required; preserve global consistency.
+            - YOU MUST NOT translate day to day terms like quality, date of birth, audit, gender, height, weight, diabetes, heart issues, family history etc. and use the English terms even when conversing in other languages.
+            - Ensure that key medical terms (e.g., BP for Blood Pressure) remain consistent across all supported languages.
+            - Provide confirmation after each question and once completed conclude the call after greeting the user.
+            - Incase the answer is not clear, ask one brief clarifying question to get the answer. Do not ask more than one clarifying question.
+            - You must use grammatically correct native-language gender forms based on your own gender ({gender}).
+            - When speaking Hindi or other Indian languages, all verbs, pronouns, honorifics, and sentence endings MUST match the assistant's gender naturally.
+            - NEVER mix masculine and feminine forms incorrectly.     
+            - If gender = female:
+            - Use feminine verb forms and feminine self-references.
+            - Examples:
+                - "मैं पूछूंगी"
+                - "मैं आपकी मदद करूंगी"
+                - "मैं आई हूँ"
+                - "मैं समझ गई"
+                - "मैं तैयार हूँ"
+
+            - If gender = male:
+            - Use masculine verb forms and masculine self-references.
+            - Examples:
+                - "मैं पूछूंगा"
+                - "मैं आपकी मदद करूंगा"
+                - "मैं आया हूँ"
+                - "मैं समझ गया"
+                - "मैं तैयार हूँ"
+
             Today's Date is {datetime.now(ZoneInfo("Asia/Kolkata")).isoformat()}
             
             KEY GUIDELINES:
@@ -160,22 +207,30 @@ class MedicalAppointmentAgent(ScenarioAgent):
             - DO NOT translate key terms: date of birth, gender, height, weight, diabetes, heart issues, family history, BP, Home Collection, Center Visit. Use English terms.
             - Follow assistant's gender ({gender}) for correct verb forms and honorifics in {language}.
             
-            FLOW:
-            1. Validate Identity: Greet the user and ask for their registered mobile number and date of birth. Call `validate_user`.
-               - If the user is not found or details mismatch, politely inform them and end the call.
-            2. Choose Exam Type: Ask if they prefer 'Home Collection' or 'Center Visit'.
-            3. Get Location:
-               - For Home Collection: Ask for area pincode, then full address and a landmark.
-               - For Center Visit: Ask for pincode, call `get_medical_center`, and present available centers for them to choose.
-            4. Schedule: Ask for preferred date and time. Use `get_available_slots` to check availability. Suggest alternatives if the slot is taken.
-            5. Confirm: Once all details are gathered, call `book_appointment`.
-            6. Closing: Confirm the appointment, mention the medical check process (BP, weight, etc.), and ask if they need anything else.
-            7. End Call: Say "Thank You" and then call the `end_call` tool.
+            CONVERSATION GUIDELINES:
+
+            "Hi, this is {name}, this is regarding your medical appointment for insurance."
+
+            ID VERIFICATION CATEGORY:
+
+            1. Could you confirm your date of birth ?
+            2. What is your registered phone number?
+
+            - Call `validate_user` to validate the user's identity based on their responses. If validation fails, politely inform the user and ask for clarification.
+            
+            3. Ask if the user would like a "Home Collection" or "Center Visit".
+            4. If Home Collection: Ask for their area pincode, then full address and a landmark.
+            5. If Center Visit: Ask for their pincode, call `get_medical_center`, and present available centers for them to choose from.
+            6. Ask for their preferred date and time for the appointment. Use `get_available_slots` to check availability and suggest alternatives if the requested slot is taken.
+            7. Once all details are gathered, call `book_appointment` to finalize the booking.
+            8. Confirm the appointment details with the user, mention the medical check process (BP, weight, etc.), and ask if they need any further assistance.
+            9. End Call: Say "Thank You" and then call the `end_call` tool.
 
             RULES:
             - Wait for user response after each question.
             - Confirm information provided by the user before moving to the next step.
             - If an answer is unclear, ask exactly one brief clarifying question.
+            - Before each tool call, inform the user about what you are going to do (e.g., "Let me check available slots for that date."). 
             
             TOOLS:
             - validate_user: To check user registration.
@@ -183,9 +238,6 @@ class MedicalAppointmentAgent(ScenarioAgent):
             - get_available_slots: To check slot availability.
             - book_appointment: To finalize the booking.
             - end_call: To hang up after "Thank You".
-
-            VALIDATION DETAILS FOR CALLER (PERSONA):
-            {validation_details}
  """
         )
         self.validation_details = validation_details
@@ -340,6 +392,7 @@ class MedicalAppointmentAgent(ScenarioAgent):
         Args:
             pin_code: pincode to find nearest medical center.
         """
+
         normalized_pin = re.sub(r"\D", "", pin_code or "")
         if not re.fullmatch(r"\d{6}", normalized_pin):
             return {
@@ -399,6 +452,7 @@ class MedicalAppointmentAgent(ScenarioAgent):
             landmark: Optional landmark for Home Collection.
             center_name: Optional center name for Center Visit.
         """
+
         user_validation = await self.validate_user(
             context=context,
             phone_number=phone_number,
@@ -495,9 +549,7 @@ class MedicalAppointmentAgent(ScenarioAgent):
                     "error": "Medical center name is required for Center Visit.",
                 }
             if normalized_pin:
-                center_result = await self.get_medical_center(
-                    context=context, pin_code=normalized_pin
-                )
+                center_result = get_centers_by_pin(normalized_pin)
                 if center_result.get("result") == "success":
                     available_centers = [
                         c["name"] for c in center_result.get("options", [])
@@ -519,7 +571,7 @@ class MedicalAppointmentAgent(ScenarioAgent):
                 "result": "failed",
                 "error": "Requested slot is already booked.",
                 "alternate_slots": _suggest_next_slots(
-                    date=date_str, exam_type=normalized_exam_type
+                    date_str=date_str, exam_type=normalized_exam_type
                 ),
             }
 
@@ -528,6 +580,18 @@ class MedicalAppointmentAgent(ScenarioAgent):
             time_str=normalized_time,
             exam_type=normalized_exam_type,
         )
+
+        appointment_type = (
+            "home" if normalized_exam_type == "Home Collection" else "center"
+        )
+        final_address = address.strip()
+        if appointment_type == "center" and center_name:
+            final_address = (
+                f"{center_name.strip()} - {final_address}"
+                if final_address
+                else center_name.strip()
+            )
+
         booking = {
             "appointment_id": appointment_id,
             "phone_number": user_validation["phone_number"],
@@ -537,22 +601,21 @@ class MedicalAppointmentAgent(ScenarioAgent):
             ),
             "date": date_str,
             "time": normalized_time,
+            "appointment_type": appointment_type,
             "exam_type": normalized_exam_type,
             "pin_code": normalized_pin,
-            "address": address.strip(),
-            "landmark": landmark.strip(),
-            "center_name": center_name.strip(),
-            "status": "confirmed",
+            "address": final_address,
             "created_at": datetime.now(INDIA_TZ).isoformat(),
         }
         try:
             booking = create_appointment(booking)
-        except IntegrityError:
+        except IntegrityError as e:
+            print(f"Database error during booking: {e}")
             return {
                 "result": "failed",
                 "error": "Requested slot is already booked.",
                 "alternate_slots": _suggest_next_slots(
-                    date=date_str, exam_type=normalized_exam_type
+                    date_str=date_str, exam_type=normalized_exam_type
                 ),
             }
 

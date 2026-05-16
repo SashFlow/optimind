@@ -186,8 +186,17 @@ async def entrypoint(ctx: JobContext):
             selected_agent, agent["gender"], language, validation_details=persona
         )
     else:
+        from client.appointment_db import get_latest_confirmed_booking
+
+        appointment = get_latest_confirmed_booking(
+            persona.get("phone_number", ""), persona.get("dob", "")
+        )
         agent = ReminderAgent(
-            selected_agent, agent["gender"], language, validation_details=persona
+            selected_agent,
+            agent["gender"],
+            language,
+            validation_details=persona,
+            appointment=appointment,
         )
 
     await session.start(

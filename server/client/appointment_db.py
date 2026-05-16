@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 import os
 from datetime import date, datetime
 from typing import Any
@@ -15,6 +14,9 @@ def _engine() -> Engine:
     database_url = os.getenv("DATABASE_URL", "").strip()
     if not database_url:
         raise RuntimeError("DATABASE_URL is required for appointment database access.")
+
+    if database_url.startswith("postgresql://"):
+        database_url = database_url.replace("postgresql://", "postgresql+psycopg://", 1)
 
     if _ENGINE is None:
         _ENGINE = create_engine(
@@ -38,7 +40,7 @@ def _row_to_dict(row: Any) -> dict[str, Any]:
     if isinstance(appt_date, date):
         result["date"] = appt_date.isoformat()
     if appt_time is not None:
-        result["time"] = appt_time.strftime("%H:%M")
+        result["time"] = appt_time
     if isinstance(created_at, datetime):
         result["created_at"] = created_at.isoformat()
     if isinstance(updated_at, datetime):
@@ -61,7 +63,7 @@ def get_user(phone_number: str) -> dict[str, Any] | None:
         row = (
             conn.execute(
                 text(
-                    "SELECT phone_number, full_name, dob "
+                    "SELECT id, phone_number, full_name, dob "
                     "FROM registered_users WHERE phone_number = :phone_number"
                 ),
                 {"phone_number": phone_number},
@@ -74,6 +76,8 @@ def get_user(phone_number: str) -> dict[str, Any] | None:
         user = dict(row)
         if isinstance(user.get("dob"), date):
             user["dob"] = user["dob"].isoformat()
+        if "id" in user:
+            user["id"] = str(user["id"])
         return user
 
 
@@ -83,7 +87,7 @@ def get_latest_confirmed_booking(phone_number: str, dob: str) -> dict[str, Any] 
             conn.execute(
                 text(
                     """
-                SELECT id, phone_number, full_name, dob, appointment_date, appointment_time,
+                SELECT id, phone_number, full_name, dob, appointment_type, appointment_date, appointment_time,
                        exam_type, pin_code, address, "createdAt", "updatedAt"
                 FROM appointments
                 WHERE phone_number = :phone_number AND dob = :dob
@@ -144,28 +148,34 @@ def create_appointment(payload: dict[str, Any]) -> dict[str, Any]:
                 text(
                     """
                 INSERT INTO appointments(
+                    id,
                     dob,
                     phone_number,
                     full_name,
                     appointment_date,
                     appointment_time,
+                    appointment_type,
                     exam_type,
                     pin_code,
                     address,
-                    "createdAt"
+                    "createdAt",
+                    "updatedAt"
                 ) VALUES (
+                    :appointment_id,
                     :dob,
                     :phone_number,
                     :full_name,
                     :date,
                     :time,
+                    :appointment_type,
                     :exam_type,
                     :pin_code,
                     :address,
+                    CAST(:created_at AS TIMESTAMPTZ),
                     CAST(:created_at AS TIMESTAMPTZ)
                 )
                 RETURNING id, phone_number, full_name, dob, appointment_date, appointment_time,
-                          exam_type, pin_code, address, "createdAt", "updatedAt"
+                          appointment_type, exam_type, pin_code, address, "createdAt", "updatedAt"
                 """
                 ),
                 payload,
@@ -203,7 +213,7 @@ def reschedule_appointment(
         old_appointment = (
             conn.execute(
                 text(
-                    """SELECT id, phone_number, full_name, pin_code, address, exam_type 
+                    """SELECT id, phone_number, full_name, pin_code, address, appointment_type 
                    FROM appointments
                    WHERE phone_number = :phone_number AND dob = :dob
                    ORDER BY \"createdAt\" DESC LIMIT 1"""
@@ -221,7 +231,12 @@ def reschedule_appointment(
             }
 
         full_name = old_appointment["full_name"]
-        final_exam_type = exam_type or old_appointment["exam_type"]
+        final_exam_type = exam_type or old_appointment.get(
+            "exam_type", "Medical Examination"
+        )
+        final_appointment_type = (
+            "home" if final_exam_type == "Home Collection" else "center"
+        )
         final_pin_code = pin_code or old_appointment["pin_code"]
         final_address = address or old_appointment["address"]
 
@@ -235,23 +250,27 @@ def reschedule_appointment(
                     full_name,
                     appointment_date,
                     appointment_time,
+                    appointment_type,
                     exam_type,
                     pin_code,
                     address,
-                    "createdAt"
+                    "createdAt",
+                    "updatedAt"
                 ) VALUES (
                     :dob,
                     :phone_number,
                     :full_name,
                     :new_date,
                     :new_time,
+                    :appointment_type,
                     :exam_type,
                     :pin_code,
                     :address,
+                    CAST(:created_at AS TIMESTAMPTZ),
                     CAST(:created_at AS TIMESTAMPTZ)
                 )
                 RETURNING id, phone_number, full_name, dob, appointment_date, appointment_time,
-                          exam_type, pin_code, address, "createdAt", "updatedAt"
+                          appointment_type, exam_type, pin_code, address, "createdAt", "updatedAt"
                 """
                 ),
                 {
@@ -260,6 +279,7 @@ def reschedule_appointment(
                     "full_name": full_name,
                     "new_date": new_date,
                     "new_time": new_time,
+                    "appointment_type": final_appointment_type,
                     "exam_type": final_exam_type,
                     "pin_code": final_pin_code or "",
                     "address": final_address or "",

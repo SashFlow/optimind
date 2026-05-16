@@ -1,9 +1,5 @@
 import asyncio
-import json
 import logging
-import os
-from urllib.parse import urlencode
-from urllib.request import urlopen
 
 from livekit import api
 from livekit.agents import RunContext, function_tool, get_job_context
@@ -67,10 +63,10 @@ async def transfer_to_human(ctx: RunContext) -> str:
 
 
 def get_centers_by_pin(pin: str) -> dict:
-    """Fetch nearby diagnostic centers for an Indian pincode using SerpAPI.
+    """Fetch nearby diagnostic centers for an Indian pincode using hard-coded data.
 
     Returns a stable payload with `result`, `pin_code`, and `options` so callers
-    can safely consume API responses and fallback states.
+    can safely consume responses and fallback states.
     """
     normalized_pin = "".join(ch for ch in (pin or "") if ch.isdigit())
     if len(normalized_pin) != 6:
@@ -81,54 +77,113 @@ def get_centers_by_pin(pin: str) -> dict:
             "error": "Invalid pincode. Please provide a 6-digit Indian pincode.",
         }
 
-    api_key = os.getenv("SERP_API_KEY", "").strip(
-    ) or os.getenv("SERPAPI_API_KEY", "").strip()
-    if not api_key:
-        return {
-            "result": "failed",
-            "pin_code": normalized_pin,
-            "options": [],
-            "error": "SERP_API_KEY is not configured.",
-        }
-
-    params = {
-        "engine": "google_maps",
-        "q": f"diagnostic center near {normalized_pin} India",
-        "hl": "en",
-        "gl": "in",
-        "api_key": api_key,
-    }
-    url = f"https://serpapi.com/search.json?{urlencode(params)}"
-
-    try:
-        with urlopen(url, timeout=10) as response:
-            payload = json.loads(response.read().decode("utf-8"))
-    except Exception as exc:
-        logger.exception(
-            "SerpAPI request failed for pincode %s", normalized_pin)
-        return {
-            "result": "failed",
-            "pin_code": normalized_pin,
-            "options": [],
-            "error": f"Unable to fetch centers from SerpAPI: {exc}",
-        }
-
-    local_results = payload.get("local_results", []) or []
-    options = []
-    for item in local_results[:5]:
-        options.append(
+    # Hard-coded diagnostic centers for common Indian cities
+    hardcoded_centers = {
+        "110001": [  # Delhi
             {
-                "name": item.get("title", "Unknown Center"),
-                "address": item.get("address", "Address unavailable"),
-                "distance_km": item.get("distance") or "N/A",
-                "rating": item.get("rating"),
-                "phone": item.get("phone"),
-            }
-        )
+                "name": "City Imaging & Clinical Labs",
+                "address": "Tilak Nagar, New Delhi",
+                "distance_km": "1.5 km",
+                "rating": 4.5,
+                "phone": "011-4722-2222",
+            },
+            {
+                "name": "Dr. Lal PathLabs",
+                "address": "Connaught Place, New Delhi",
+                "distance_km": "2.0 km",
+                "rating": 4.2,
+                "phone": "011-3988-5050",
+            },
+        ],
+        "400001": [  # Mumbai
+            {
+                "name": "Metropolis Healthcare",
+                "address": "Fort, Mumbai",
+                "distance_km": "0.5 km",
+                "rating": 4.6,
+                "phone": "022-3399-3939",
+            },
+            {
+                "name": "SRL Diagnostics",
+                "address": "Colaba, Mumbai",
+                "distance_km": "1.8 km",
+                "rating": 4.3,
+                "phone": "022-2282-0000",
+            },
+        ],
+        "560001": [  # Bangalore
+            {
+                "name": "Anand Diagnostic Laboratory",
+                "address": "Shivajinagar, Bangalore",
+                "distance_km": "1.2 km",
+                "rating": 4.7,
+                "phone": "080-2222-1234",
+            },
+            {
+                "name": "Aarthi Scans & Labs",
+                "address": "Jayanagar, Bangalore",
+                "distance_km": "3.5 km",
+                "rating": 4.4,
+                "phone": "080-4666-4666",
+            },
+        ],
+        "600001": [  # Chennai
+            {
+                "name": "Hi-Tech Diagnostic Centre",
+                "address": "George Town, Chennai",
+                "distance_km": "0.8 km",
+                "rating": 4.5,
+                "phone": "044-2534-1234",
+            },
+            {
+                "name": "Neuberg Ehrlich Laboratory",
+                "address": "Royapettah, Chennai",
+                "distance_km": "2.5 km",
+                "rating": 4.3,
+                "phone": "044-4200-0000",
+            },
+        ],
+        "700001": [  # Kolkata
+            {
+                "name": "Pulse Diagnostics",
+                "address": "Esplanade, Kolkata",
+                "distance_km": "1.0 km",
+                "rating": 4.4,
+                "phone": "033-2225-1234",
+            },
+            {
+                "name": "Suraksha Diagnostic",
+                "address": "B.B.D. Bagh, Kolkata",
+                "distance_km": "2.2 km",
+                "rating": 4.2,
+                "phone": "033-6619-1000",
+            },
+        ],
+    }
+
+    # Default options for any other valid 6-digit PIN
+    default_options = [
+        {
+            "name": "Apollo Diagnostics",
+            "address": "Main Road, Sector 15",
+            "distance_km": "2.5 km",
+            "rating": 4.3,
+            "phone": "1800-102-4567",
+        },
+        {
+            "name": "Thyrocare Technologies",
+            "address": "Industrial Area, Phase 2",
+            "distance_km": "4.0 km",
+            "rating": 4.1,
+            "phone": "9412-222-222",
+        },
+    ]
+
+    options = hardcoded_centers.get(normalized_pin, default_options)
 
     return {
         "result": "success",
         "pin_code": normalized_pin,
         "options": options,
-        "source": "serpapi",
+        "source": "hardcoded",
     }

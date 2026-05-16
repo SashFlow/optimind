@@ -113,10 +113,22 @@ def _is_slot_taken(date: str, time: str, exam_type: str) -> bool:
     )
 
 
-def _suggest_next_slots(date: str, exam_type: str, limit: int = 3) -> list[str]:
+def _suggest_next_slots(date_str: str, exam_type: str, limit: int = 3) -> list[str]:
     options: list[str] = []
+    now = datetime.now(INDIA_TZ)
+    is_today = date_str == now.date().isoformat()
+
     for slot in _valid_slots_for_exam_type(exam_type):
-        if not _is_slot_taken(date=date, time=slot, exam_type=exam_type):
+        if is_today:
+            slot_dt = datetime.combine(
+                now.date(),
+                datetime.strptime(slot, "%H:%M").time(),
+                tzinfo=INDIA_TZ,
+            )
+            if slot_dt < now + timedelta(hours=2):
+                continue
+
+        if not _is_slot_taken(date=date_str, time=slot, exam_type=exam_type):
             options.append(slot)
         if len(options) >= limit:
             break
@@ -145,15 +157,22 @@ def _build_appointment_id(date_str: str, time_str: str, exam_type: str) -> str:
 
 
 class ReminderAgent(ScenarioAgent):
-    def __init__(self, name, gender, language, validation_details) -> None:
+    def __init__(self, name, gender, language, validation_details, appointment) -> None:
+        appointment_info = "No active appointment found."
+        if appointment:
+            appointment_info = f"""
+            - Date: {appointment.get("appointment_date")}
+            - Time: {appointment.get("appointment_time")}
+            - Type: {appointment.get("exam_type")}
+            - Location: {appointment.get("address", "Not provided")}
+            """
+
         super().__init__(
             instructions=f"""
             ROLE:
-            You are {name}, a {gender} Scheduling Assistant, You can help peoples schedule medical appointments for insurance process.
+            You are {name}, a {gender} Scheduling Assistant. You help people confirm and reschedule medical appointments for their insurance process in India.
             You are based out of India and talk to Indian native people so you must make sure you sound like an Indian Doctor with a thick accent.
             User has selected {language} as their primary language. YOU MUST CONVERSE IN {language}.
-            
-            Today's Date is {datetime.now(ZoneInfo("Asia/Kolkata")).isoformat()}
             
             RULES:
             - You must go through all the questions.
@@ -189,40 +208,35 @@ class ReminderAgent(ScenarioAgent):
                 - "मैं समझ गया"
                 - "मैं तैयार हूँ"
 
-            TOOLS:
-            - validate_user (to verify user identity)
-            - get_available_slots (to check slot availability on requested date)
-            - get_medical_center (to find nearby centers for Center Visit)
-            - book_appointment (to book a new appointment)
-            - reschedule_appointment_tool (to reschedule to new date/time)
-            - transfer_to_human (to transfer to a human agent)
-            - end_call (to end conversation after greeting user)
+            Today's Date is {datetime.now(ZoneInfo("Asia/Kolkata")).isoformat()}
             
-            - YOU MUST NEVER CALL THE END_CALL TOOL WITHOUT GREETING THE USER "Thank You". 
-            - ALWAYS MAKE SURE TO END THE CONVERSATION ONCE THE RESCHEDULE IS CONFIRMED AND ON A GOOD NOTE WITH A POLITE GREETING.
-            - Use reschedule_appointment_tool ONLY AFTER validating user and confirming new date/time availability.
-            - If you cannot help the user or they are frustrated, use transfer_to_human.
+            KEY GUIDELINES:
+            - Use a natural, friendly Indian tone with a professional yet conversational style.
+            - Keep responses short (1-2 sentences per paragraph).
+            - Use everyday vocabulary.
+            - DO NOT translate key terms: date of birth, gender, height, weight, diabetes, heart issues, family history, BP, Home Collection, Center Visit. Use English terms.
+            - Follow assistant's gender ({gender}) for correct verb forms and honorifics in {language}.
             
+            APPOINTMENT DETAILS FOR CALLER:
+            {appointment_info}
+
             VALIDATION DETAILS FOR CALLER:
             {validation_details}
 
-            - Use the above deatils to validate the caller when they provide their phone number and date of birth. If the details do not match, politely inform the caller and end the call.
-
-
             CONVERSATION GUIDELINES:
 
-            "Hi, this is {name}, your virtual assistant. I'm calling to confirm that your medical appointment is scheduled for [DATE] at [TIME]."
+            "Hi, this is {name}, your virtual assistant. I'm calling to confirm that your medical appointment for insurance is scheduled for {appointment.get("appointment_date") if appointment else "[DATE]"} at {appointment.get("appointment_time") if appointment else "[TIME]"}."
 
             "Your appointment details are as follows:
-            - Date: [Appointment Date]
-            - Time: [Appointment Time]
-            - Type: [Home Collection / Center Visit]"
+            - Date: {appointment.get("appointment_date") if appointment else "[DATE]"}
+            - Time: {appointment.get("appointment_time") if appointment else "[TIME]"}
+            - Type: {appointment.get("exam_type") if appointment else "[TYPE]"}"
 
             "When the technician arrives at your location, kindly call back on this number. Please note that the medical process will be conducted and recorded through a video call. A video call link will be shared with you through SMS or WhatsApp."
 
             "During the process:
             - Your height and weight will be measured
-            - Blood pressure will be checked
+            - Blood pressure (BP) will be checked
             - Abdomen measurement will be conducted
             - Blood sample collection will be completed"
 
@@ -233,51 +247,33 @@ class ReminderAgent(ScenarioAgent):
             - Internet connection is active for the video call
             - You follow any fasting instructions shared earlier"
 
-            "May I confirm if you will be available for the appointment on [DATE] at [TIME]?"
-
-            [Customer responds]
+            "May I confirm if you will be available for the appointment on {appointment.get("appointment_date") if appointment else "[DATE]"} at {appointment.get("appointment_time") if appointment else "[TIME]"}?"
 
             IF CUSTOMER CONFIRMS:
-
-            "Thank you for your cooperation. You will shortly receive reminder details via SMS or WhatsApp. Have a good day!"
-
-            Then call end_call to finish the conversation.
+            - Say "Thank you for your cooperation. You will shortly receive reminder details via SMS or WhatsApp. Have a good day!"
+            - Call `end_call`.
 
             IF CUSTOMER ASKS TO RESCHEDULE:
+            - Inform them you can help.
+            - Ask for new date and time.
+            - Use `get_available_slots` to check availability.
+            - Use `reschedule_appointment_tool` to finalize.
+            - Confirm the new details and say "Thank You" before calling `end_call`.
 
-            "I understand. I will help you reschedule your appointment."
+            IF CUSTOMER IS FRUSTRATED:
+            - Offer to transfer to a human agent using `transfer_to_human`.
 
-            "What date would you like to reschedule to? Please provide the date in DD-MM-YYYY format."
-
-            [Customer provides new date]
-
-            "Thank you. Now, what time would you prefer? Please provide the time in HH:MM format (e.g., 14:30 for 2:30 PM)."
-
-            [Customer provides new time]
-
-            "And will this be a Home Collection or Center Visit?"
-
-            [Customer confirms exam type]
-
-            Then call reschedule_appointment_tool with the new date, time, and exam type.
-
-            IF RESCHEDULE SUCCEEDS:
-
-            "Perfect! Your appointment has been successfully rescheduled to [NEW DATE] at [NEW TIME]. You will receive updated confirmation via SMS or WhatsApp."
-
-            IF RESCHEDULE FAILS:
-
-            Ask the customer to provide alternate date/time and try again, or offer to transfer to a human agent.
-
-            FINAL STEP:
-
-            Once appointment is confirmed or rescheduled, always end with:
-            "Thank you for choosing us. Have a great day!"
-
-            Then call end_call to close the conversation.
+            TOOLS:
+            - validate_user: To check user registration if they provide new details.
+            - get_available_slots: To check slot availability.
+            - get_medical_center: To find centers near a pincode.
+            - reschedule_appointment_tool: To finalize the reschedule.
+            - transfer_to_human: To connect to a live person.
+            - end_call: To hang up after "Thank You".
  """
         )
         self.validation_details = validation_details
+        self.appointment = appointment
 
     def _validate_and_check_slot(
         self,
@@ -352,7 +348,7 @@ class ReminderAgent(ScenarioAgent):
                 "result": "failed",
                 "error": "Requested slot is already booked.",
                 "alternate_slots": _suggest_next_slots(
-                    date=date_str, exam_type=normalized_exam_type
+                    date_str=date_str, exam_type=normalized_exam_type
                 ),
             }
 
@@ -551,6 +547,8 @@ class ReminderAgent(ScenarioAgent):
         exam_type: str,
         pin_code: str = "",
         address: str = "",
+        landmark: str = "",
+        center_name: str = "",
     ) -> dict[str, Any]:
         """Reserve an appointment for a caller.
 
@@ -567,6 +565,8 @@ class ReminderAgent(ScenarioAgent):
             exam_type: Home Collection / Center Visit.
             pin_code: Optional 6-digit pincode.
             address: Required for Home Collection.
+            landmark: Optional landmark for Home Collection.
+            center_name: Optional center name for Center Visit.
         """
         user_validation = await self.validate_user(
             context=context,
@@ -610,6 +610,21 @@ class ReminderAgent(ScenarioAgent):
             time_str=normalized_time,
             exam_type=normalized_exam_type,
         )
+
+        appointment_type = (
+            "home" if normalized_exam_type == "Home Collection" else "center"
+        )
+        final_address = address.strip()
+        if landmark:
+            final_address = f"{final_address} (Landmark: {landmark.strip()})"
+
+        if appointment_type == "center" and center_name:
+            final_address = (
+                f"{center_name.strip()} - {final_address}"
+                if final_address
+                else center_name.strip()
+            )
+
         booking = {
             "appointment_id": appointment_id,
             "phone_number": user_validation["phone_number"],
@@ -619,10 +634,10 @@ class ReminderAgent(ScenarioAgent):
             ),
             "date": date_str,
             "time": normalized_time,
+            "appointment_type": appointment_type,
             "exam_type": normalized_exam_type,
             "pin_code": normalized_pin,
-            "address": address.strip(),
-            "status": "confirmed",
+            "address": final_address,
             "created_at": datetime.now(INDIA_TZ).isoformat(),
         }
         try:
@@ -632,7 +647,7 @@ class ReminderAgent(ScenarioAgent):
                 "result": "failed",
                 "error": "Requested slot is already booked.",
                 "alternate_slots": _suggest_next_slots(
-                    date=date_str, exam_type=normalized_exam_type
+                    date_str=date_str, exam_type=normalized_exam_type
                 ),
             }
 
@@ -726,3 +741,8 @@ class ReminderAgent(ScenarioAgent):
                 "You will receive updated confirmation via SMS or WhatsApp.",
             ],
         }
+
+    @function_tool()
+    async def transfer_to_human(self, context: RunContext) -> str:
+        """Transfer the call to a human agent if you cannot assist the user or if they are frustrated."""
+        return "Transferring you to a human agent. Please stay on the line."
