@@ -218,7 +218,7 @@ def resolve_metadata_payload(metadata: str | None) -> tuple[str, str, str, str, 
 
                 agent_name = payload.get("selectedAgent", DEFAULT_NAME)
                 language = payload.get("language", DEFAULT_LANGUAGE)
-                persona = PERSONAS[payload.get("persona", DEFAULT_PERSONA)]
+                persona = PERSONAS[payload.get("selectedPersona", DEFAULT_PERSONA)]
 
                 return interaction_mode, slug, agent_name, language, persona
 

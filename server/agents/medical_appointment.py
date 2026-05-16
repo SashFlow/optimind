@@ -290,7 +290,7 @@ class MedicalAppointmentAgent(ScenarioAgent):
         )
         expected_dob = self.validation_details.get("dob", "")
 
-        if normalized_phone != expected_phone:
+        if normalized_phone[-10:] != expected_phone[-10:]:
             return {
                 "is_registered": False,
                 "is_valid": True,
@@ -307,8 +307,7 @@ class MedicalAppointmentAgent(ScenarioAgent):
                 "dob": dob_date.isoformat(),
             }
 
-        expected_profile = get_user(
-            normalized_phone) or self.validation_details
+        expected_profile = get_user(normalized_phone) or self.validation_details
         active_booking = get_latest_confirmed_booking(
             phone_number=normalized_phone,
             dob=dob_date.isoformat(),

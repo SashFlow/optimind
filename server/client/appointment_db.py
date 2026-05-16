@@ -64,7 +64,7 @@ def get_user(phone_number: str) -> dict[str, Any] | None:
             conn.execute(
                 text(
                     "SELECT id, phone_number, full_name, dob "
-                    "FROM registered_users WHERE phone_number = :phone_number"
+                    "FROM registered_users WHERE RIGHT(phone_number, 10) = RIGHT(:phone_number, 10)"
                 ),
                 {"phone_number": phone_number},
             )
@@ -90,7 +90,7 @@ def get_latest_confirmed_booking(phone_number: str, dob: str) -> dict[str, Any] 
                 SELECT id, phone_number, full_name, dob, appointment_type, appointment_date, appointment_time,
                        exam_type, pin_code, address, "createdAt", "updatedAt"
                 FROM appointments
-                WHERE phone_number = :phone_number AND dob = :dob
+                WHERE RIGHT(phone_number, 10) = RIGHT(:phone_number, 10) AND dob = :dob
                 ORDER BY "createdAt" DESC
                 LIMIT 1
                 """
@@ -195,7 +195,7 @@ def reschedule_appointment(
     pin_code: str = "",
     address: str = "",
 ) -> dict[str, Any]:
-    """Reschedule an existing appointment by creating a new one.
+    """Reschedule an existing appointment by updating it.
 
     Args:
         phone_number: User phone number.
@@ -207,15 +207,15 @@ def reschedule_appointment(
         address: Optional address for home collection.
 
     Returns:
-        New appointment record or error dict.
+        Updated appointment record or error dict.
     """
     with _engine().begin() as conn:
         old_appointment = (
             conn.execute(
                 text(
-                    """SELECT id, phone_number, full_name, pin_code, address, appointment_type 
+                    """SELECT id, phone_number, full_name, pin_code, address, appointment_type, exam_type 
                    FROM appointments
-                   WHERE phone_number = :phone_number AND dob = :dob
+                   WHERE RIGHT(phone_number, 10) = RIGHT(:phone_number, 10) AND dob = :dob
                    ORDER BY \"createdAt\" DESC LIMIT 1"""
                 ),
                 {"phone_number": phone_number, "dob": dob},
@@ -230,7 +230,7 @@ def reschedule_appointment(
                 "error": "No existing appointment found to reschedule.",
             }
 
-        full_name = old_appointment["full_name"]
+        old_id = old_appointment["id"]
         final_exam_type = exam_type or old_appointment.get(
             "exam_type", "Medical Examination"
         )
@@ -240,50 +240,33 @@ def reschedule_appointment(
         final_pin_code = pin_code or old_appointment["pin_code"]
         final_address = address or old_appointment["address"]
 
-        new_appointment = (
+        updated_appointment = (
             conn.execute(
                 text(
                     """
-                INSERT INTO appointments(
-                    dob,
-                    phone_number,
-                    full_name,
-                    appointment_date,
-                    appointment_time,
-                    appointment_type,
-                    exam_type,
-                    pin_code,
-                    address,
-                    "createdAt",
-                    "updatedAt"
-                ) VALUES (
-                    :dob,
-                    :phone_number,
-                    :full_name,
-                    :new_date,
-                    :new_time,
-                    :appointment_type,
-                    :exam_type,
-                    :pin_code,
-                    :address,
-                    CAST(:created_at AS TIMESTAMPTZ),
-                    CAST(:created_at AS TIMESTAMPTZ)
-                )
+                UPDATE appointments
+                SET
+                    appointment_date = :new_date,
+                    appointment_time = :new_time,
+                    appointment_type = :appointment_type,
+                    exam_type = :exam_type,
+                    pin_code = :pin_code,
+                    address = :address,
+                    "updatedAt" = CAST(:updated_at AS TIMESTAMPTZ)
+                WHERE id = :id
                 RETURNING id, phone_number, full_name, dob, appointment_date, appointment_time,
                           appointment_type, exam_type, pin_code, address, "createdAt", "updatedAt"
                 """
                 ),
                 {
-                    "dob": dob,
-                    "phone_number": phone_number,
-                    "full_name": full_name,
+                    "id": old_id,
                     "new_date": new_date,
                     "new_time": new_time,
                     "appointment_type": final_appointment_type,
                     "exam_type": final_exam_type,
                     "pin_code": final_pin_code or "",
                     "address": final_address or "",
-                    "created_at": datetime.now().isoformat(),
+                    "updated_at": datetime.now().isoformat(),
                 },
             )
             .mappings()
@@ -291,7 +274,7 @@ def reschedule_appointment(
         )
 
     return (
-        _row_to_dict(new_appointment)
-        if new_appointment
-        else {"result": "failed", "error": "Failed to create new appointment."}
+        _row_to_dict(updated_appointment)
+        if updated_appointment
+        else {"result": "failed", "error": "Failed to update appointment."}
     )

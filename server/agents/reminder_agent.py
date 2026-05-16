@@ -256,7 +256,6 @@ class ReminderAgent(ScenarioAgent):
             IF CUSTOMER ASKS TO RESCHEDULE:
             - Inform them you can help.
             - Ask for new date and time.
-            - Use `get_available_slots` to check availability.
             - Use `reschedule_appointment_tool` to finalize.
             - Confirm the new details and say "Thank You" before calling `end_call`.
 
@@ -265,7 +264,6 @@ class ReminderAgent(ScenarioAgent):
 
             TOOLS:
             - validate_user: To check user registration if they provide new details.
-            - get_available_slots: To check slot availability.
             - get_medical_center: To find centers near a pincode.
             - reschedule_appointment_tool: To finalize the reschedule.
             - transfer_to_human: To connect to a live person.
@@ -408,7 +406,7 @@ class ReminderAgent(ScenarioAgent):
         )
         expected_dob = self.validation_details.get("dob", "")
 
-        if normalized_phone != expected_phone:
+        if normalized_phone[-10:] != expected_phone[-10:]:
             return {
                 "is_registered": False,
                 "is_valid": True,
@@ -439,63 +437,6 @@ class ReminderAgent(ScenarioAgent):
             "profile": expected_profile,
             "has_active_booking": active_booking is not None,
             "active_booking": active_booking or {},
-        }
-
-    @function_tool()
-    async def get_available_slots(
-        self,
-        context: RunContext,
-        date: str,
-        exam_type: str,
-    ) -> dict[str, Any]:
-        """Get available slots for a date and exam type.
-
-        Args:
-            date: Requested date in YYYY-MM-DD, DD-MM-YYYY, today, or tomorrow.
-            exam_type: Home Collection or Center Visit.
-        """
-        normalized_exam_type = _normalize_exam_type(exam_type)
-        if not normalized_exam_type:
-            return {
-                "result": "failed",
-                "error": "Invalid exam type. Use Home Collection or Center Visit.",
-            }
-
-        parsed_date = _parse_booking_date(date)
-        if parsed_date is None:
-            return {
-                "result": "failed",
-                "error": "Invalid date format. Use DD-MM-YYYY or YYYY-MM-DD.",
-            }
-
-        date_str = parsed_date.date().isoformat()
-        slots = [
-            slot
-            for slot in _valid_slots_for_exam_type(normalized_exam_type)
-            if not _is_slot_taken(
-                date=date_str, time=slot, exam_type=normalized_exam_type
-            )
-        ]
-
-        if parsed_date.date() == datetime.now(INDIA_TZ).date():
-            now = datetime.now(INDIA_TZ)
-            slots = [
-                slot
-                for slot in slots
-                if datetime.combine(
-                    parsed_date.date(),
-                    datetime.strptime(slot, "%H:%M").time(),
-                    tzinfo=INDIA_TZ,
-                )
-                >= now + timedelta(hours=2)
-            ]
-
-        return {
-            "result": "success",
-            "date": date_str,
-            "exam_type": normalized_exam_type,
-            "available_slots": slots,
-            "total_available": len(slots),
         }
 
     @function_tool()
@@ -534,132 +475,6 @@ class ReminderAgent(ScenarioAgent):
             "pin_code": normalized_pin,
             "options": centers,
             "source": center_response.get("source", "serpapi"),
-        }
-
-    @function_tool()
-    async def book_appointment(
-        self,
-        context: RunContext,
-        phone_number: str,
-        dob: str,
-        date: str,
-        time: str,
-        exam_type: str,
-        pin_code: str = "",
-        address: str = "",
-        landmark: str = "",
-        center_name: str = "",
-    ) -> dict[str, Any]:
-        """Reserve an appointment for a caller.
-
-        Use this after confirming the Exam Type and preferred date and time. The tool checks the
-        requested day and slot against the available booking data, returns a confirmed
-        appointment when possible, and suggests alternate slots when the exact request
-        is not available.
-
-        Args:
-            phone_number: phone number of the person who wants the booking.
-            dob: Date of birth in DD-MM-YYYY or YYYY-MM-DD.
-            date: Requested date in DD-MM-YYYY or YYYY-MM-DD.
-            time: Preferred time slot to reserve (HH:MM).
-            exam_type: Home Collection / Center Visit.
-            pin_code: Optional 6-digit pincode.
-            address: Required for Home Collection.
-            landmark: Optional landmark for Home Collection.
-            center_name: Optional center name for Center Visit.
-        """
-        user_validation = await self.validate_user(
-            context=context,
-            phone_number=phone_number,
-            dob=dob,
-        )  # type: ignore
-        if not user_validation.get("is_valid"):
-            return {
-                "result": "failed",
-                "error": user_validation.get("error", "User validation failed."),
-                "details": user_validation,
-            }
-
-        slot_check = self._validate_and_check_slot(
-            date=date,
-            time=time,
-            exam_type=exam_type,
-        )
-        if slot_check["result"] == "failed":
-            return slot_check
-
-        date_str = slot_check["date_str"]
-        normalized_time = slot_check["normalized_time"]
-        normalized_exam_type = slot_check["normalized_exam_type"]
-
-        if normalized_exam_type == "Home Collection" and not address.strip():
-            return {
-                "result": "failed",
-                "error": "Address is required for Home Collection appointments.",
-            }
-
-        normalized_pin = re.sub(r"\D", "", pin_code or "")
-        if normalized_pin and not re.fullmatch(r"\d{6}", normalized_pin):
-            return {
-                "result": "failed",
-                "error": "Pin code must be a 6-digit number.",
-            }
-
-        appointment_id = _build_appointment_id(
-            date_str=date_str,
-            time_str=normalized_time,
-            exam_type=normalized_exam_type,
-        )
-
-        appointment_type = (
-            "home" if normalized_exam_type == "Home Collection" else "center"
-        )
-        final_address = address.strip()
-        if landmark:
-            final_address = f"{final_address} (Landmark: {landmark.strip()})"
-
-        if appointment_type == "center" and center_name:
-            final_address = (
-                f"{center_name.strip()} - {final_address}"
-                if final_address
-                else center_name.strip()
-            )
-
-        booking = {
-            "appointment_id": appointment_id,
-            "phone_number": user_validation["phone_number"],
-            "dob": user_validation["dob"],
-            "full_name": user_validation.get("profile", {}).get(
-                "full_name", "Unknown User"
-            ),
-            "date": date_str,
-            "time": normalized_time,
-            "appointment_type": appointment_type,
-            "exam_type": normalized_exam_type,
-            "pin_code": normalized_pin,
-            "address": final_address,
-            "created_at": datetime.now(INDIA_TZ).isoformat(),
-        }
-        try:
-            booking = create_appointment(booking)
-        except IntegrityError:
-            return {
-                "result": "failed",
-                "error": "Requested slot is already booked.",
-                "alternate_slots": _suggest_next_slots(
-                    date_str=date_str, exam_type=normalized_exam_type
-                ),
-            }
-
-        return {
-            "result": "success",
-            "message": "Appointment booked successfully. Please arrive or be available 10 minutes early.",
-            "booking": booking,
-            "instructions": [
-                "Carry a valid photo ID.",
-                "Stay hydrated; fasting is not required unless informed separately.",
-                "You may receive confirmation on SMS or WhatsApp.",
-            ],
         }
 
     @function_tool()
