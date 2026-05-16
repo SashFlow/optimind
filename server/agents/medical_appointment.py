@@ -221,7 +221,7 @@ class MedicalAppointmentAgent(ScenarioAgent):
             3. Ask if the user would like a "Home Collection" or "Center Visit".
             4. If Home Collection: Ask for their area pincode, then full address and a landmark.
             5. If Center Visit: Ask for their pincode, call `get_medical_center`, and present available centers for them to choose from.
-            6. Ask for their preferred date and time for the appointment. Use `get_available_slots` to check availability and suggest alternatives if the requested slot is taken.
+            6. Ask for their preferred date and time for the appointment. 
             7. Once all details are gathered, call `book_appointment` to finalize the booking.
             8. Confirm the appointment details with the user, mention the medical check process (BP, weight, etc.), and ask if they need any further assistance.
             9. End Call: Say "Thank You" and then call the `end_call` tool.
@@ -235,10 +235,9 @@ class MedicalAppointmentAgent(ScenarioAgent):
             TOOLS:
             - validate_user: To check user registration.
             - get_medical_center: To find centers near a pincode.
-            - get_available_slots: To check slot availability.
             - book_appointment: To finalize the booking.
             - end_call: To hang up after "Thank You".
- """
+"""
         )
         self.validation_details = validation_details
 
@@ -308,7 +307,8 @@ class MedicalAppointmentAgent(ScenarioAgent):
                 "dob": dob_date.isoformat(),
             }
 
-        expected_profile = get_user(normalized_phone) or self.validation_details
+        expected_profile = get_user(
+            normalized_phone) or self.validation_details
         active_booking = get_latest_confirmed_booking(
             phone_number=normalized_phone,
             dob=dob_date.isoformat(),
@@ -322,63 +322,6 @@ class MedicalAppointmentAgent(ScenarioAgent):
             "profile": expected_profile,
             "has_active_booking": active_booking is not None,
             "active_booking": active_booking or {},
-        }
-
-    @function_tool()
-    async def get_available_slots(
-        self,
-        context: RunContext,
-        date: str,
-        exam_type: str,
-    ) -> dict[str, Any]:
-        """Get available slots for a date and exam type.
-
-        Args:
-            date: Requested date in YYYY-MM-DD, DD-MM-YYYY, today, or tomorrow.
-            exam_type: Home Collection or Center Visit.
-        """
-        normalized_exam_type = _normalize_exam_type(exam_type)
-        if not normalized_exam_type:
-            return {
-                "result": "failed",
-                "error": "Invalid exam type. Use Home Collection or Center Visit.",
-            }
-
-        parsed_date = _parse_booking_date(date)
-        if parsed_date is None:
-            return {
-                "result": "failed",
-                "error": "Invalid date format. Use DD-MM-YYYY or YYYY-MM-DD.",
-            }
-
-        date_str = parsed_date.date().isoformat()
-        slots = [
-            slot
-            for slot in _valid_slots_for_exam_type(normalized_exam_type)
-            if not _is_slot_taken(
-                date=date_str, time=slot, exam_type=normalized_exam_type
-            )
-        ]
-
-        if parsed_date.date() == datetime.now(INDIA_TZ).date():
-            now = datetime.now(INDIA_TZ)
-            slots = [
-                slot
-                for slot in slots
-                if datetime.combine(
-                    parsed_date.date(),
-                    datetime.strptime(slot, "%H:%M").time(),
-                    tzinfo=INDIA_TZ,
-                )
-                >= now + timedelta(hours=2)
-            ]
-
-        return {
-            "result": "success",
-            "date": date_str,
-            "exam_type": normalized_exam_type,
-            "available_slots": slots,
-            "total_available": len(slots),
         }
 
     @function_tool()
@@ -431,7 +374,6 @@ class MedicalAppointmentAgent(ScenarioAgent):
         exam_type: str,
         pin_code: str = "",
         address: str = "",
-        landmark: str = "",
         center_name: str = "",
     ) -> dict[str, Any]:
         """Reserve an appointment for a caller.
@@ -449,7 +391,6 @@ class MedicalAppointmentAgent(ScenarioAgent):
             exam_type: Home Collection / Center Visit.
             pin_code: Optional 6-digit pincode.
             address: Required for Home Collection.
-            landmark: Optional landmark for Home Collection.
             center_name: Optional center name for Center Visit.
         """
 

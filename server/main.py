@@ -18,6 +18,7 @@ from livekit.protocol.egress import (
     GCPUpload,
     StopEgressRequest,
 )
+from livekit.plugins import anam, google, ai_coustics
 from livekit.agents.voice import AgentSession, AgentStateChangedEvent
 from agents.common import resolve_metadata_payload
 from agents.tools import end_call
@@ -60,7 +61,7 @@ def get_egress_id(room_name: str) -> str | None:
 
 @server.rtc_session(agent_name="demo-agent")
 async def entrypoint(ctx: JobContext):
-    from livekit.plugins import anam, google, ai_coustics
+
     from agents.medical_examinar import MedicalExaminationAgent
     from agents.reminder_agent import ReminderAgent
     from agents.medical_appointment import MedicalAppointmentAgent
@@ -98,7 +99,8 @@ async def entrypoint(ctx: JobContext):
             logger.info(
                 "agent still listening after speaking; prompting for clarification"
             )
-            session.generate_reply(instructions=("Can you repeat the question."))
+            session.generate_reply(instructions=(
+                "Can you repeat the question."))
         except asyncio.CancelledError:
             # State changed before timeout, so this check is no longer needed.
             return
@@ -180,7 +182,8 @@ async def entrypoint(ctx: JobContext):
             room_options.audio_output = True
 
     if slug == "medical-examination":
-        agent = MedicalExaminationAgent(selected_agent, agent["gender"], language)
+        agent = MedicalExaminationAgent(
+            selected_agent, agent["gender"], language)
     elif slug == "medical-appointment":
         agent = MedicalAppointmentAgent(
             selected_agent, agent["gender"], language, validation_details=persona
