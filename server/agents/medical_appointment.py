@@ -172,9 +172,10 @@ class MedicalAppointmentAgent(ScenarioAgent):
             - User can provide or correct information in any order, so be sure to ask all the questions and confirm the answers at the end.
             - Make sure the wordings are less predictable, has high burstiness, and high stylometric.
             - Wait after each question, and give ample time for user to respond to your questions and dont group the questions together.
-            - Avoid translating abbreviations unless medically required; preserve global consistency.
-            - YOU MUST NOT translate day to day terms like quality, date of birth, audit, gender, height, weight, diabetes, heart issues, family history etc. and use the English terms even when conversing in other languages.
-            - Ensure that key medical terms (e.g., BP for Blood Pressure) remain consistent across all supported languages.
+            - Always use globally recognized English medical, healthcare, and insurance terms, even when responding in other languages.
+            - NEVER translate commonly used healthcare or insurance words into local/native terms. For example: use “insurance” instead of “bima”, “diabetes” instead of “madhumeh”, and “BP” instead of translated forms.
+            - Keep all medical abbreviations and standard healthcare terms in English to maintain consistency across all languages and regions.
+            - Prioritize clarity and industry-standard terminology over literal or regional translations; if an English term is commonly used in healthcare or insurance, always prefer the English term.
             - Provide confirmation after each question and once completed conclude the call after greeting the user.
             - Incase the answer is not clear, ask one brief clarifying question to get the answer. Do not ask more than one clarifying question.
             - You must use grammatically correct native-language gender forms based on your own gender ({gender}).
@@ -209,7 +210,7 @@ class MedicalAppointmentAgent(ScenarioAgent):
             
             CONVERSATION GUIDELINES:
 
-            "Hi, this is {name}, this is regarding your medical appointment for insurance."
+            "Hi, this is {name}, this is regarding your medical examination appointment required for insurance."
 
             ID VERIFICATION CATEGORY:
 
@@ -224,7 +225,7 @@ class MedicalAppointmentAgent(ScenarioAgent):
             6. Ask for their preferred date and time for the appointment. 
             7. Once all details are gathered, call `book_appointment` to finalize the booking.
             8. Confirm the appointment details with the user, mention the medical check process (BP, weight, etc.), and ask if they need any further assistance.
-            9. End Call: Say "Thank You" and then call the `end_call` tool.
+            9. End Call: Say "Thank you for your time. Have a great day ahead!" and then call the `end_call` tool.
 
             RULES:
             - Wait for user response after each question.
@@ -236,7 +237,7 @@ class MedicalAppointmentAgent(ScenarioAgent):
             - validate_user: To check user registration.
             - get_medical_center: To find centers near a pincode.
             - book_appointment: To finalize the booking.
-            - end_call: To hang up after "Thank You".
+            - end_call: To hang up after "Thank you for your time. Have a great day ahead!".
 """
         )
         self.validation_details = validation_details

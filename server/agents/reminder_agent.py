@@ -6,12 +6,10 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from livekit.agents import RunContext, function_tool
-from sqlalchemy.exc import IntegrityError
 from zoneinfo import ZoneInfo
 
 from .base import ScenarioAgent
 from client.appointment_db import (
-    create_appointment,
     get_daily_booking_count,
     get_latest_confirmed_booking,
     get_user,
@@ -225,7 +223,7 @@ class ReminderAgent(ScenarioAgent):
 
             CONVERSATION GUIDELINES:
 
-            "Hi, this is {name}, your virtual assistant. I'm calling to confirm that your medical appointment for insurance is scheduled for {appointment.get("appointment_date") if appointment else "[DATE]"} at {appointment.get("appointment_time") if appointment else "[TIME]"}."
+            "Hi, this is {name}. I'm calling to confirm that your medical examination appointment is scheduled for {appointment.get("appointment_date") if appointment else "[DATE]"} at {appointment.get("appointment_time") if appointment else "[TIME]"}."
 
             "Your appointment details are as follows:
             - Date: {appointment.get("appointment_date") if appointment else "[DATE]"}

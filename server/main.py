@@ -16,12 +16,12 @@ from livekit.protocol.egress import (
     RoomCompositeEgressRequest,
     EncodedFileType,
     GCPUpload,
-    StopEgressRequest,
 )
 from livekit.plugins import anam, google, ai_coustics
 from livekit.agents.voice import AgentSession, AgentStateChangedEvent
 from agents.common import resolve_metadata_payload
 from agents.tools import end_call
+from utils import get_agent, check_for_false_interruption
 
 load_dotenv()
 
@@ -43,37 +43,34 @@ AGENT_LIB = {
     },
 }
 
-# TODO: move to redis later if we want to persist across server restarts or have multiple server instances
-EGRESS_IDS = {}
-
-
-def set_egress_id(room_name: str, egress_id: str) -> None:
-    EGRESS_IDS[room_name] = egress_id
-
-
-def get_egress_id(room_name: str) -> str | None:
-    if room_name not in EGRESS_IDS:
-        return None
-    id = EGRESS_IDS.get(room_name)
-    del EGRESS_IDS[room_name]
-    return id
-
 
 @server.rtc_session(agent_name="demo-agent")
 async def entrypoint(ctx: JobContext):
-
-    from agents.medical_examinar import MedicalExaminationAgent
-    from agents.reminder_agent import ReminderAgent
-    from agents.medical_appointment import MedicalAppointmentAgent
-
-    lkapi = api.LiveKitAPI()
-    egress = lkapi.egress
+    # Connect to Room
     ctx.log_context_fields = {
         "room": ctx.room.name,
     }
+    await ctx.connect()
+
+    lkapi = api.LiveKitAPI()
+    egress = lkapi.egress
+
+    # Session Creation
     interaction_mode, slug, selected_agent, language, persona = (
         resolve_metadata_payload(ctx.job.metadata)
     )
+    use_avatar = interaction_mode == "video"
+    avatar_started = False
+
+    room_options = room_io.RoomOptions(
+        audio_input=room_io.AudioInputOptions(
+            noise_cancellation=ai_coustics.audio_enhancement(
+                model=ai_coustics.EnhancerModel.QUAIL_VF_S,
+            ),
+        ),
+        audio_output=room_io.AudioOutputOptions(),
+    )
+
     agent = AGENT_LIB[selected_agent]
     session = AgentSession(
         llm=google.realtime.RealtimeModel(
@@ -82,30 +79,11 @@ async def entrypoint(ctx: JobContext):
             voice=agent["voice"],
         ),
         tools=[google.tools.GoogleSearch(), end_call],
-        # turn_detection=MultilingualModel(),
         vad=ai_coustics.VAD(),
         preemptive_generation=True,
-        resume_false_interruption=True,
     )
 
     false_interruption_task: asyncio.Task[None] | None = None
-
-    async def _check_for_false_interruption() -> None:
-        try:
-            await asyncio.sleep(20)
-            if session.agent_state != "listening":
-                return
-
-            logger.info(
-                "agent still listening after speaking; prompting for clarification"
-            )
-            session.generate_reply(instructions=(
-                "Can you repeat the question."))
-        except asyncio.CancelledError:
-            # State changed before timeout, so this check is no longer needed.
-            return
-        except Exception:
-            logger.exception("failed to run false interruption check")
 
     @session.on("agent_state_changed")
     def _on_agent_state_changed(ev: AgentStateChangedEvent):
@@ -118,34 +96,8 @@ async def entrypoint(ctx: JobContext):
         if ev.new_state == "listening" and ev.old_state == "speaking":
             # If we remain in listening unexpectedly, nudge the user for clarification.
             false_interruption_task = asyncio.create_task(
-                _check_for_false_interruption()
+                check_for_false_interruption(session)
             )
-
-    @session.on("agent_false_interruption")
-    def _on_agent_false_interruption(ev: AgentFalseInterruptionEvent):
-        logger.info("false positive interruption, resuming")
-        session.generate_reply(instructions=ev.extra_instructions or NOT_GIVEN)
-
-    @session.on("close")
-    def _on_close():
-        async def cleanup():
-            await egress.stop_egress(
-                stop=StopEgressRequest(egress_id=get_egress_id(ctx.room.name))
-            )
-
-        asyncio.create_task(cleanup())
-
-    use_avatar = interaction_mode == "video"
-    avatar_started = False
-
-    room_options = room_io.RoomOptions(
-        audio_input=room_io.AudioInputOptions(
-            noise_cancellation=ai_coustics.audio_enhancement(
-                model=ai_coustics.EnhancerModel.QUAIL_VF_L
-            ),
-        ),
-        audio_output=not use_avatar,
-    )
 
     if use_avatar:
         participant = None
@@ -178,58 +130,30 @@ async def entrypoint(ctx: JobContext):
                 )
 
         if not avatar_started:
-            # Keep the user experience alive even when avatar startup fails.
             room_options.audio_output = True
 
-    if slug == "medical-examination":
-        agent = MedicalExaminationAgent(
-            selected_agent, agent["gender"], language)
-    elif slug == "medical-appointment":
-        agent = MedicalAppointmentAgent(
-            selected_agent, agent["gender"], language, validation_details=persona
-        )
-    else:
-        from client.appointment_db import get_latest_confirmed_booking
-
-        appointment = get_latest_confirmed_booking(
-            persona.get("phone_number", ""), persona.get("dob", "")
-        )
-        agent = ReminderAgent(
-            selected_agent,
-            agent["gender"],
-            language,
-            validation_details=persona,
-            appointment=appointment,
-        )
-
     await session.start(
-        agent=agent,
+        agent=get_agent(slug, selected_agent, agent, language, persona),
         room=ctx.room,
         room_options=room_options,
     )
 
-    creds = None
-    with open("./creds.json", "r") as f:
-        creds = f.read()
-    if creds:
-        response = await egress.start_room_composite_egress(
-            start=RoomCompositeEgressRequest(
-                room_name=ctx.room.name,
-                audio_only=False,
-                layout="grid",
-                preset=api.EncodingOptionsPreset.H264_720P_30,
-                file=EncodedFileOutput(
-                    file_type=EncodedFileType.MP4,
-                    filepath=f"{ctx.room.name}/recording-session.mp4",
-                    gcp=GCPUpload(
-                        credentials=creds,
-                        bucket=os.getenv("GCP_BUCKET_NAME", "").strip(),
-                    ),
+    # Egress Init
+    await egress.start_room_composite_egress(
+        start=RoomCompositeEgressRequest(
+            room_name=ctx.room.name,
+            audio_only=False,
+            layout="grid",
+            preset=api.EncodingOptionsPreset.H264_720P_30,
+            file=EncodedFileOutput(
+                file_type=EncodedFileType.MP4,
+                filepath=f"{ctx.room.name}/recording-session.mp4",
+                gcp=GCPUpload(
+                    bucket=os.getenv("GCP_BUCKET_NAME", "").strip(),
                 ),
-            )
+            ),
         )
-        set_egress_id(ctx.room.name, response.egress_id)
-    await ctx.connect()
+    )
 
 
 if __name__ == "__main__":

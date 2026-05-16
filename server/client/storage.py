@@ -12,7 +12,7 @@ class _GCPStorageClientProxy:
 
     def _build_client(self):
         load_dotenv()
-        creds_path = os.getenv("GCP_CREDENTIALS_PATH", "").strip()
+        creds_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "").strip()
         if creds_path:
             return storage.Client.from_service_account_json(creds_path)
 

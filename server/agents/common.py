@@ -215,10 +215,14 @@ def resolve_metadata_payload(metadata: str | None) -> tuple[str, str, str, str, 
                 )
                 if interaction_mode not in INTERACTION_MODES:
                     interaction_mode = "audio"
-
                 agent_name = payload.get("selectedAgent", DEFAULT_NAME)
                 language = payload.get("language", DEFAULT_LANGUAGE)
-                persona = PERSONAS[payload.get("selectedPersona", DEFAULT_PERSONA)]
+
+                persona = (
+                    PERSONAS[payload.get("persona", DEFAULT_PERSONA)]
+                    if payload.get("persona") in PERSONAS
+                    else {}
+                )
 
                 return interaction_mode, slug, agent_name, language, persona
 
