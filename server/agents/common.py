@@ -21,6 +21,251 @@ PERSONAS = {
         "full_name": "Priya Nair",
         "dob": "1995-01-20",
     },
+    "9876500002": {
+        "phone_number": "9876500002",
+        "full_name": "Arjun Mehta",
+        "dob": "1990-03-11",
+    },
+    "9876500003": {
+        "phone_number": "9876500003",
+        "full_name": "Sneha Kapoor",
+        "dob": "1993-07-24",
+    },
+    "9876500004": {
+        "phone_number": "9876500004",
+        "full_name": "Vikram Singh",
+        "dob": "1988-12-02",
+    },
+    "9876500005": {
+        "phone_number": "9876500005",
+        "full_name": "Ananya Reddy",
+        "dob": "1996-09-18",
+    },
+    "9876500006": {
+        "phone_number": "9876500006",
+        "full_name": "Karan Malhotra",
+        "dob": "1991-05-14",
+    },
+    "9876500007": {
+        "phone_number": "9876500007",
+        "full_name": "Neha Verma",
+        "dob": "1994-02-28",
+    },
+    "9876500008": {
+        "phone_number": "9876500008",
+        "full_name": "Rahul Khanna",
+        "dob": "1989-11-10",
+    },
+    "9876500009": {
+        "phone_number": "9876500009",
+        "full_name": "Pooja Iyer",
+        "dob": "1997-06-06",
+    },
+    "9876500010": {
+        "phone_number": "9876500010",
+        "full_name": "Amit Joshi",
+        "dob": "1992-01-17",
+    },
+    "9876500011": {
+        "phone_number": "9876500011",
+        "full_name": "Divya Menon",
+        "dob": "1993-10-03",
+    },
+    "9876500012": {
+        "phone_number": "9876500012",
+        "full_name": "Siddharth Rao",
+        "dob": "1987-04-22",
+    },
+    "9876500013": {
+        "phone_number": "9876500013",
+        "full_name": "Meera Pillai",
+        "dob": "1998-08-09",
+    },
+    "9876500014": {
+        "phone_number": "9876500014",
+        "full_name": "Yash Patel",
+        "dob": "1991-12-30",
+    },
+    "9876500015": {
+        "phone_number": "9876500015",
+        "full_name": "Kavya Shetty",
+        "dob": "1995-03-26",
+    },
+    "9876500016": {
+        "phone_number": "9876500016",
+        "full_name": "Aditya Kulkarni",
+        "dob": "1990-07-01",
+    },
+    "9876500017": {
+        "phone_number": "9876500017",
+        "full_name": "Ritika Bansal",
+        "dob": "1994-11-19",
+    },
+    "9876500018": {
+        "phone_number": "9876500018",
+        "full_name": "Nikhil Jain",
+        "dob": "1988-02-13",
+    },
+    "9876500019": {
+        "phone_number": "9876500019",
+        "full_name": "Shreya Das",
+        "dob": "1996-05-29",
+    },
+    "9876500020": {
+        "phone_number": "9876500020",
+        "full_name": "Manish Tiwari",
+        "dob": "1992-09-07",
+    },
+    "9876500021": {
+        "phone_number": "9876500021",
+        "full_name": "Aisha Khan",
+        "dob": "1997-01-12",
+    },
+    "9876500022": {
+        "phone_number": "9876500022",
+        "full_name": "Rajat Arora",
+        "dob": "1989-06-21",
+    },
+    "9876500023": {
+        "phone_number": "9876500023",
+        "full_name": "Simran Kaur",
+        "dob": "1993-04-04",
+    },
+    "9876500024": {
+        "phone_number": "9876500024",
+        "full_name": "Harsh Vardhan",
+        "dob": "1991-08-25",
+    },
+    "9876500025": {
+        "phone_number": "9876500025",
+        "full_name": "Ishita Roy",
+        "dob": "1995-12-08",
+    },
+    "9876500026": {
+        "phone_number": "9876500026",
+        "full_name": "Deepak Yadav",
+        "dob": "1987-10-16",
+    },
+    "9876500027": {
+        "phone_number": "9876500027",
+        "full_name": "Tanvi Mishra",
+        "dob": "1998-02-01",
+    },
+    "9876500028": {
+        "phone_number": "9876500028",
+        "full_name": "Akash Choudhary",
+        "dob": "1990-11-23",
+    },
+    "9876500029": {
+        "phone_number": "9876500029",
+        "full_name": "Nandini Rao",
+        "dob": "1994-06-14",
+    },
+    "9876500030": {
+        "phone_number": "9876500030",
+        "full_name": "Varun Bhatia",
+        "dob": "1992-03-05",
+    },
+    "9876500031": {
+        "phone_number": "9876500031",
+        "full_name": "Rhea Thomas",
+        "dob": "1996-09-27",
+    },
+    "9876500032": {
+        "phone_number": "9876500032",
+        "full_name": "Abhishek Sinha",
+        "dob": "1988-01-31",
+    },
+    "9876500033": {
+        "phone_number": "9876500033",
+        "full_name": "Mitali Ghosh",
+        "dob": "1995-07-13",
+    },
+    "9876500034": {
+        "phone_number": "9876500034",
+        "full_name": "Sameer Puri",
+        "dob": "1991-04-18",
+    },
+    "9876500035": {
+        "phone_number": "9876500035",
+        "full_name": "Lavanya Krishnan",
+        "dob": "1997-11-09",
+    },
+    "9876500036": {
+        "phone_number": "9876500036",
+        "full_name": "Gaurav Saxena",
+        "dob": "1989-05-02",
+    },
+    "9876500037": {
+        "phone_number": "9876500037",
+        "full_name": "Bhavna Chopra",
+        "dob": "1993-08-20",
+    },
+    "9876500038": {
+        "phone_number": "9876500038",
+        "full_name": "Rohan Desai",
+        "dob": "1990-12-11",
+    },
+    "9876500039": {
+        "phone_number": "9876500039",
+        "full_name": "Sanya Mallick",
+        "dob": "1996-03-15",
+    },
+    "9876500040": {
+        "phone_number": "9876500040",
+        "full_name": "Tushar Anand",
+        "dob": "1992-10-28",
+    },
+    "9876500041": {
+        "phone_number": "9876500041",
+        "full_name": "Keerthi Narayan",
+        "dob": "1994-01-07",
+    },
+    "9876500042": {
+        "phone_number": "9876500042",
+        "full_name": "Mohit Sehgal",
+        "dob": "1987-06-26",
+    },
+    "9876500043": {
+        "phone_number": "9876500043",
+        "full_name": "Pallavi Sen",
+        "dob": "1998-04-12",
+    },
+    "9876500044": {
+        "phone_number": "9876500044",
+        "full_name": "Naveen Kumar",
+        "dob": "1991-09-03",
+    },
+    "9876500045": {
+        "phone_number": "9876500045",
+        "full_name": "Anjali Bhat",
+        "dob": "1995-02-22",
+    },
+    "9876500046": {
+        "phone_number": "9876500046",
+        "full_name": "Prateek Agarwal",
+        "dob": "1989-07-30",
+    },
+    "9876500047": {
+        "phone_number": "9876500047",
+        "full_name": "Shruti Kulshrestha",
+        "dob": "1993-11-14",
+    },
+    "9876500048": {
+        "phone_number": "9876500048",
+        "full_name": "Devansh Gupta",
+        "dob": "1990-05-19",
+    },
+    "9876500049": {
+        "phone_number": "9876500049",
+        "full_name": "Aarushi Bedi",
+        "dob": "1997-08-06",
+    },
+    "9876500050": {
+        "phone_number": "9876500050",
+        "full_name": "Chirag Oberoi",
+        "dob": "1992-12-24",
+    },
 }
 CURRENT_DATE = datetime.now(tz=timezone.utc).date().isoformat()
 INTERACTION_MODES = {"audio", "video"}
@@ -233,7 +478,7 @@ def resolve_metadata_payload(metadata: str | None) -> tuple[str, str, str, str, 
         ("calls-", "audio"),
     ):
         if raw_metadata.startswith(prefix):
-            slug = raw_metadata[len(prefix) :].strip()
+            slug = raw_metadata[len(prefix):].strip()
             return (
                 interaction_mode,
                 slug or DEFAULT_SCENARIO,
@@ -257,7 +502,8 @@ def resolve_room_metadata(metadata: str | None) -> tuple[str, str, str, str, dic
 def build_agent_instructions(
     scenario: ScenarioDefinition, operating_notes: Sequence[str]
 ) -> str:
-    live_data_bullets = "\n".join(f"- {item}" for item in scenario.live_data_points)
+    live_data_bullets = "\n".join(
+        f"- {item}" for item in scenario.live_data_points)
     rule_bullets = "\n".join(f"- {note}" for note in operating_notes)
 
     return f"""
