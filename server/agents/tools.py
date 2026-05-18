@@ -3,6 +3,7 @@ import logging
 
 from livekit import api
 from livekit.agents import RunContext, function_tool, get_job_context
+from livekit.agents.beta.tools import EndCallTool
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -33,7 +34,7 @@ async def end_call(ctx: RunContext):
     """
 
     logger.info("Ending call as requested by agent.")
-    await ctx.wait_for_playout()
+    await ctx.speech_handle.wait_for_playout()
     await asyncio.sleep(3)
     await hangup_call()
 
@@ -187,3 +188,8 @@ def get_centers_by_pin(pin: str) -> dict:
         "options": options,
         "source": "hardcoded",
     }
+
+
+end_call_tool = EndCallTool(
+    end_instructions="Thank you for your time. Have a great day ahead!"
+).tools[0]

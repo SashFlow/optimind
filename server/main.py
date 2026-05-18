@@ -3,8 +3,6 @@ import asyncio
 import os
 from dotenv import load_dotenv
 from livekit.agents import (
-    NOT_GIVEN,
-    AgentFalseInterruptionEvent,
     AgentServer,
     JobContext,
     cli,
@@ -17,10 +15,10 @@ from livekit.protocol.egress import (
     EncodedFileType,
     GCPUpload,
 )
-from livekit.plugins import anam, google, ai_coustics
+from livekit.plugins import anam, openai, ai_coustics
 from livekit.agents.voice import AgentSession, AgentStateChangedEvent
 from agents.common import resolve_metadata_payload
-from agents.tools import end_call
+from agents.tools import end_call_tool
 from utils import get_agent, check_for_false_interruption
 
 load_dotenv()
@@ -34,12 +32,12 @@ AGENT_LIB = {
     "Sanjay": {
         "gender": "male",
         "avatar": "5f46f99e-c4be-4f22-bde2-b364975a0851",
-        "voice": "Charon",
+        "voice": "echo",
     },
     "Samira": {
         "gender": "female",
         "avatar": "d3e94c42-b348-4bec-8225-e47a682128a0",
-        "voice": "Leda",
+        "voice": "marin",
     },
 }
 
@@ -73,12 +71,11 @@ async def entrypoint(ctx: JobContext):
 
     agent = AGENT_LIB[selected_agent]
     session = AgentSession(
-        llm=google.realtime.RealtimeModel(
-            model="gemini-live-2.5-flash-native-audio",
-            vertexai=True,
+        llm=openai.realtime.RealtimeModel(
+            model="gpt-realtime-mini",
             voice=agent["voice"],
         ),
-        tools=[google.tools.GoogleSearch(), end_call],
+        tools=[openai.tools.WebSearch(), end_call_tool],
         vad=ai_coustics.VAD(),
         preemptive_generation=True,
     )
