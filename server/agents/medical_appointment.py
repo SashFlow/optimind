@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 import re
 from datetime import datetime, timedelta
@@ -18,7 +19,7 @@ from client.appointment_db import (
     is_slot_taken,
 )
 
-from .tools import get_centers_by_pin
+from .tools import get_centers_by_pin, hangup_call
 
 
 logger = logging.getLogger(__name__)
@@ -165,6 +166,8 @@ class MedicalAppointmentAgent(ScenarioAgent):
             User has selected {language} as their primary language. YOU MUST CONVERSE IN {language}.
             
             RULES:
+            - YOU MUST NEVER CALL END_CALL FUNCTION WITHOUT CALLING GOODBYE FUNCTION FIRST. ALWAYS CALL GOODBYE FUNCTION TO SAY FAREWELL MESSAGES TO THE USER AND THEN CALL END_CALL TO HANG UP THE CALL. DO NOT END THE CALL UNLESS THE USER HAS INDICATED THEY HAVE NO MORE QUESTIONS OR NEEDS, SUCH AS BY SAYING "NO THANKS", "THAT'S ALL", "GOODBYE", "THANK YOU", OR SIMILAR PHRASES.
+            - YOU MUST REPEAT THE RESPONSE FROM GOODBYE FUNCTION IN YOUR OWN WORDS TO THE USER IN A FRIENDLY MANNER AND THEN CALL END_CALL TO END THE CALL AFTER THAT. DO NOT CALL END_CALL WITHOUT SAYING GOODBYE MESSAGES TO THE USER.
             - You must go through all the questions.
             - Please respond in a friendly, conversational tone but not too zesty.
             - Use everyday simple vocabulary that easy to understand for people of all ages.
@@ -180,7 +183,12 @@ class MedicalAppointmentAgent(ScenarioAgent):
             - Incase the answer is not clear, ask one brief clarifying question to get the answer. Do not ask more than one clarifying question.
             - You must use grammatically correct native-language gender forms based on your own gender ({gender}).
             - When speaking Hindi or other Indian languages, all verbs, pronouns, honorifics, and sentence endings MUST match the assistant's gender naturally.
-            - NEVER mix masculine and feminine forms incorrectly.     
+            - NEVER mix masculine and feminine forms incorrectly.    
+            - Wait for user response after each question.
+            - Confirm information provided by the user before moving to the next step.
+            - If an answer is unclear, ask exactly one brief clarifying question.
+            - Before each tool call, inform the user about what you are going to do (e.g., "Let me check available slots for that date."). 
+             
             - If gender = female:
             - Use feminine verb forms and feminine self-references.
             - Examples:
@@ -225,19 +233,7 @@ class MedicalAppointmentAgent(ScenarioAgent):
             6. Ask for their preferred date and time for the appointment. 
             7. Once all details are gathered, call `book_appointment` to finalize the booking.
             8. Confirm the appointment details with the user, mention the medical check process (BP, weight, etc.), and ask if they need any further assistance.
-            9. End Call: Say "Thank you for your time. Have a great day ahead!" and then call the `end_call` tool.
-
-            RULES:
-            - Wait for user response after each question.
-            - Confirm information provided by the user before moving to the next step.
-            - If an answer is unclear, ask exactly one brief clarifying question.
-            - Before each tool call, inform the user about what you are going to do (e.g., "Let me check available slots for that date."). 
-            
-            TOOLS:
-            - validate_user: To check user registration.
-            - get_medical_center: To find centers near a pincode.
-            - book_appointment: To finalize the booking.
-            - end_call: To hang up after "Thank you for your time. Have a great day ahead!".
+            9. If the user has no more questions or needs, call the `goodbye` tool and then call the end the call.
 """
         )
         self.validation_details = validation_details
@@ -570,3 +566,22 @@ class MedicalAppointmentAgent(ScenarioAgent):
                 "You may receive confirmation on SMS or WhatsApp.",
             ],
         }
+
+    @function_tool()
+    async def goodbye(
+        self,
+        context: RunContext,
+    ) -> str:
+        """
+        You should call this function when the user indicates they have no more questions or needs, such as by saying "no thanks", "that's all", "goodbye", "thank you", or similar phrases. When you call this function, you should first generate a friendly goodbye message to the user, such as "Thank you for your time. Have a great day ahead!" and then end the call cleanly.
+         - Generate a friendly goodbye message to the user.
+         - Do not call this function unless the user has indicated they have no more questions or needs
+         - After generating the goodbye message, end the call cleanly.
+        """
+
+        async def _end_after_delay():
+            await asyncio.sleep(9)
+            await hangup_call()
+
+        asyncio.ensure_future(_end_after_delay())
+        return "Say goodbye to the user in a friendly manner and end the call."

@@ -7,7 +7,6 @@ from typing import Any
 from livekit.agents.voice import Agent
 from livekit.agents.voice.room_io import RoomIO
 from livekit.rtc.rpc import RpcError
-from livekit.agents.beta.tools import EndCallTool
 from .common import WidgetPayload
 from .prompts import SESSION_INSTRUCTIONS
 
@@ -19,8 +18,10 @@ class ScenarioAgent(Agent):
         super().__init__(instructions=instructions)
 
     async def on_enter(self) -> None:
-        # await self.clear_widgets()
         self.session.generate_reply(instructions=SESSION_INSTRUCTIONS)
+
+    async def on_exit(self) -> None:
+        self.session.generate_reply(instructions="Thank you for your time. Goodbye!")
 
     async def clear_widgets(self) -> None:
         await self._send_widget_rpc({"action": "clear"})

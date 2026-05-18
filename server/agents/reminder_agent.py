@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 import re
 from datetime import datetime, timedelta
@@ -17,7 +18,7 @@ from client.appointment_db import (
     reschedule_appointment,
 )
 
-from .tools import get_centers_by_pin
+from .tools import get_centers_by_pin, hangup_call
 
 
 logger = logging.getLogger(__name__)
@@ -172,7 +173,10 @@ class ReminderAgent(ScenarioAgent):
             You are based out of India and talk to Indian native people so you must make sure you sound like an Indian Doctor with a thick accent.
             User has selected {language} as their primary language. YOU MUST CONVERSE IN {language}.
             
+            
             RULES:
+            - YOU MUST NEVER CALL END_CALL FUNCTION WITHOUT CALLING GOODBYE FUNCTION FIRST. ALWAYS CALL GOODBYE FUNCTION TO SAY FAREWELL MESSAGES TO THE USER AND THEN CALL END_CALL TO HANG UP THE CALL. DO NOT END THE CALL UNLESS THE USER HAS INDICATED THEY HAVE NO MORE QUESTIONS OR NEEDS, SUCH AS BY SAYING "NO THANKS", "THAT'S ALL", "GOODBYE", "THANK YOU", OR SIMILAR PHRASES.
+            - YOU MUST REPEAT THE RESPONSE FROM GOODBYE FUNCTION IN YOUR OWN WORDS TO THE USER IN A FRIENDLY MANNER AND THEN CALL END_CALL TO END THE CALL AFTER THAT. DO NOT CALL END_CALL WITHOUT SAYING GOODBYE MESSAGES TO THE USER.
             - You must go through all the questions.
             - Please respond in a friendly, conversational tone but not too zesty.
             - Use everyday simple vocabulary that easy to understand for people of all ages.
@@ -248,24 +252,17 @@ class ReminderAgent(ScenarioAgent):
             "May I confirm if you will be available for the appointment on {appointment.get("appointment_date") if appointment else "[DATE]"} at {appointment.get("appointment_time") if appointment else "[TIME]"}?"
 
             IF CUSTOMER CONFIRMS:
-            - Say "Thank you for your cooperation. You will shortly receive reminder details via SMS or WhatsApp. Have a good day!"
-            - Call `end_call`.
+            - Call goodbye tool and end the call after that.
 
             IF CUSTOMER ASKS TO RESCHEDULE:
             - Inform them you can help.
             - Ask for new date and time.
             - Use `reschedule_appointment_tool` to finalize.
-            - Confirm the new details and say "Thank You" before calling `end_call`.
+            - Confirm the new details with the user.
+            - Call goodbye tool and end the call after that.
 
             IF CUSTOMER IS FRUSTRATED:
             - Offer to transfer to a human agent using `transfer_to_human`.
-
-            TOOLS:
-            - validate_user: To check user registration if they provide new details.
-            - get_medical_center: To find centers near a pincode.
-            - reschedule_appointment_tool: To finalize the reschedule.
-            - transfer_to_human: To connect to a live person.
-            - end_call: To hang up after "Thank You".
  """
         )
         self.validation_details = validation_details
@@ -559,3 +556,22 @@ class ReminderAgent(ScenarioAgent):
     async def transfer_to_human(self, context: RunContext) -> str:
         """Transfer the call to a human agent if you cannot assist the user or if they are frustrated."""
         return "Transferring you to a human agent. Please stay on the line."
+
+    @function_tool()
+    async def goodbye(
+        self,
+        context: RunContext,
+    ) -> str:
+        """
+        You should call this function when the user indicates they have no more questions or needs, such as by saying "no thanks", "that's all", "goodbye", "thank you", or similar phrases. When you call this function, you should first generate a friendly goodbye message to the user, such as "Thank you for your time. Have a great day ahead!" and then end the call cleanly.
+         - Generate a friendly goodbye message to the user.
+         - Do not call this function unless the user has indicated they have no more questions or needs
+         - After generating the goodbye message, end the call cleanly.
+        """
+
+        async def _end_after_delay():
+            await asyncio.sleep(9)
+            await hangup_call()
+
+        asyncio.ensure_future(_end_after_delay())
+        return "Say goodbye to the user in a friendly manner and end the call."

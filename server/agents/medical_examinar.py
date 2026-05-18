@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
@@ -8,6 +9,8 @@ from typing import Any
 from client.storage import gcp_storage_client
 from datetime import datetime, timezone
 from livekit.agents import RunContext, function_tool, get_job_context
+
+from agents.tools import hangup_call
 
 from .base import ScenarioAgent
 
@@ -185,6 +188,8 @@ class MedicalExaminationAgent(ScenarioAgent):
             User has selected {language} as their primary language. YOU MUST CONVERSE IN {language}.
             
             RULES:
+            - YOU MUST NEVER CALL END_CALL FUNCTION WITHOUT CALLING GOODBYE FUNCTION FIRST. ALWAYS CALL GOODBYE FUNCTION TO SAY FAREWELL MESSAGES TO THE USER AND THEN CALL END_CALL TO HANG UP THE CALL. DO NOT END THE CALL UNLESS THE USER HAS INDICATED THEY HAVE NO MORE QUESTIONS OR NEEDS, SUCH AS BY SAYING "NO THANKS", "THAT'S ALL", "GOODBYE", "THANK YOU", OR SIMILAR PHRASES.
+            - YOU MUST REPEAT THE RESPONSE FROM GOODBYE FUNCTION IN YOUR OWN WORDS TO THE USER IN A FRIENDLY MANNER AND THEN CALL END_CALL TO END THE CALL AFTER THAT. DO NOT CALL END_CALL WITHOUT SAYING GOODBYE MESSAGES TO THE USER.
             - You must go through all the questions.
             - Please respond in a friendly, conversational tone but not too zesty.
             - Use everyday simple vocabulary that easy to understand for people of all ages.
@@ -199,7 +204,8 @@ class MedicalExaminationAgent(ScenarioAgent):
             - Incase the answer is not clear, ask one brief clarifying question to get the answer. Do not ask more than one clarifying question.
             - You must use grammatically correct native-language gender forms based on your own gender ({gender}).
             - When speaking Hindi or other Indian languages, all verbs, pronouns, honorifics, and sentence endings MUST match the assistant's gender naturally.
-            - NEVER mix masculine and feminine forms incorrectly.     
+            - NEVER mix masculine and feminine forms incorrectly.
+
             - If gender = female:
             - Use feminine verb forms and feminine self-references.
             - Examples:
@@ -225,7 +231,7 @@ class MedicalExaminationAgent(ScenarioAgent):
                 - ask mulitple follow up questions to get the details of the condition and make sure to get all the details of the condition
                 - do not move to next question until you have all the details of the condition
 
-            TOOLS:
+            ADDITIONAL TOOL INFORMATION AND GUIDELINES:
             - Data capture and reporting:
             - After user responds to each question, call log_response tool immediately.
             - In each log_response tool call, pass: `question_id`, `answer`, and `reason` (if needed).
@@ -242,10 +248,8 @@ class MedicalExaminationAgent(ScenarioAgent):
             - If any answer is Yes for medical history conditions, include detailed reason covering origin, duration, treatment, and current status.
             - If hospitalization or surgery answer is Yes, reason MUST include surgery/hospitalization date and hospital name.
 
-            - Greet the user and then call the end_call tool to end the call. 
-            
-            - YOU MUST NEVER CALL THE END_CALL TOOL WITHOUT GREETING THE USER "Thank You". ALWAYS MAKE SURE TO END THE CONVERSATION ONCE THE QUESTIONS ARE ANSWERED AND ON A GOOD NOTE WITH A POLITE GREETING.
-           
+            - If the user has no more questions or needs, call the `goodbye` tool and then call the end the call.
+                       
 
             CONVERSATION GUIDELINES:
 
@@ -293,7 +297,7 @@ class MedicalExaminationAgent(ScenarioAgent):
             1. Have you suffered from any gynecological problem related to Breast, Uterus, cervix?
             2. Are you pregnant?
 
-            Say: "Thank You"
+            END
  """
         )
 
@@ -645,8 +649,7 @@ class MedicalExaminationAgent(ScenarioAgent):
             question_id = self._clean_text(str(item.get("question_id", "")))
             question = self._clean_text(str(item.get("question", "")))
             answer = self._clean_text(str(item.get("answer", "")))
-            reason = self._clean_text(
-                str(item.get("reason", ""))) or "General response"
+            reason = self._clean_text(str(item.get("reason", ""))) or "General response"
 
             if not question_id:
                 question_id = self._infer_question_id(question)
@@ -777,8 +780,7 @@ class MedicalExaminationAgent(ScenarioAgent):
                 ]
             )
         writer.writerow([])
-        writer.writerow(
-            ["Generated At (UTC)", datetime.now(timezone.utc).isoformat()])
+        writer.writerow(["Generated At (UTC)", datetime.now(timezone.utc).isoformat()])
 
         csv_bytes = buffer.getvalue().encode("utf-8")
         gcp_bucket = os.getenv("GCP_BUCKET_NAME", "").strip()
@@ -798,8 +800,7 @@ class MedicalExaminationAgent(ScenarioAgent):
         try:
             bucket = gcp_storage_client.bucket(gcp_bucket)
             blob = bucket.blob(object_key)
-            blob.upload_from_file(io.BytesIO(csv_bytes),
-                                  content_type="text/csv")
+            blob.upload_from_file(io.BytesIO(csv_bytes), content_type="text/csv")
         except Exception as exc:
             logger.exception("Failed to upload medical report to GCS: %s", exc)
             local_path = self._write_local_report(
@@ -818,3 +819,22 @@ class MedicalExaminationAgent(ScenarioAgent):
             "Medical report generated and uploaded successfully. "
             f"GCS: gs://{gcp_bucket}/{object_key}."
         )
+
+    @function_tool()
+    async def goodbye(
+        self,
+        context: RunContext,
+    ) -> str:
+        """
+        You should call this function when the user indicates they have no more questions or needs, such as by saying "no thanks", "that's all", "goodbye", "thank you", or similar phrases. When you call this function, you should first generate a friendly goodbye message to the user, such as "Thank you for your time. Have a great day ahead!" and then end the call cleanly.
+         - Generate a friendly goodbye message to the user.
+         - Do not call this function unless the user has indicated they have no more questions or needs
+         - After generating the goodbye message, end the call cleanly.
+        """
+
+        async def _end_after_delay():
+            await asyncio.sleep(9)
+            await hangup_call()
+
+        asyncio.ensure_future(_end_after_delay())
+        return "Say goodbye to the user in a friendly manner and end the call."
