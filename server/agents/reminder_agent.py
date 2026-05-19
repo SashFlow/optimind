@@ -418,7 +418,8 @@ class ReminderAgent(ScenarioAgent):
                 "dob": dob_date.isoformat(),
             }
 
-        expected_profile = get_user(normalized_phone) or self.validation_details
+        expected_profile = get_user(
+            normalized_phone) or self.validation_details
         active_booking = get_latest_confirmed_booking(
             phone_number=normalized_phone,
             dob=dob_date.isoformat(),
@@ -571,7 +572,8 @@ class ReminderAgent(ScenarioAgent):
 
         async def _end_after_delay():
             await asyncio.sleep(9)
+            context.session.shutdown()
             await hangup_call()
 
         asyncio.ensure_future(_end_after_delay())
-        return "Say goodbye and have a nice dayto the user in a friendly manner and end the call."
+        return "Say have a nice day to the user in a friendly manner and end the call."

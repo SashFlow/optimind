@@ -21,7 +21,8 @@ class ScenarioAgent(Agent):
         self.session.generate_reply(instructions=SESSION_INSTRUCTIONS)
 
     async def on_exit(self) -> None:
-        self.session.generate_reply(instructions="Thank you for your time. Goodbye!")
+        self.session.generate_reply(
+            instructions="Thank you for your time. Goodbye!")
 
     async def clear_widgets(self) -> None:
         await self._send_widget_rpc({"action": "clear"})
@@ -70,7 +71,8 @@ class ScenarioAgent(Agent):
         if remote_participants:
             return remote_participants[0].identity
 
-        raise RuntimeError("No remote participant available for widget updates.")
+        raise RuntimeError(
+            "No remote participant available for widget updates.")
 
     def _room_io(self) -> RoomIO | None:
         return getattr(self.session, "_room_io", None)

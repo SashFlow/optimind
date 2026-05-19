@@ -36,7 +36,8 @@ async def check_for_false_interruption(session: AgentSession) -> None:
         if session.agent_state != "listening":
             return
 
-        logger.info("agent still listening after speaking; prompting for clarification")
+        logger.info(
+            "agent still listening after speaking; prompting for clarification")
         session.generate_reply(instructions=("Can you repeat the question."))
     except asyncio.CancelledError:
         # State changed before timeout, so this check is no longer needed.

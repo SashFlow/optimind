@@ -15,12 +15,14 @@ from livekit.protocol.egress import (
     EncodedFileType,
     GCPUpload,
 )
+from google.genai import types as genai_types
 from livekit.plugins import anam, google, ai_coustics
 from livekit.agents.voice import AgentSession, AgentStateChangedEvent
 from agents.common import resolve_metadata_payload
 from agents.tools import end_call
-from utils import get_agent, check_for_false_interruption
-
+from utils.helper import get_agent, check_for_false_interruption
+from google.genai.types import FunctionResponseScheduling
+import utils.patch as patch
 load_dotenv()
 
 logger = logging.getLogger(__name__)
@@ -66,15 +68,17 @@ async def entrypoint(ctx: JobContext):
                 model=ai_coustics.EnhancerModel.QUAIL_VF_S,
             ),
         ),
+        close_on_disconnect=True,
+        delete_room_on_close=True,
         audio_output=room_io.AudioOutputOptions(),
     )
 
     agent = AGENT_LIB[selected_agent]
     session = AgentSession(
         llm=google.realtime.RealtimeModel(
-            model="gemini-live-2.5-flash-native-audio",
-            vertexai=True,
+            model="gemini-3.1-flash-live-preview",
             voice=agent["voice"],
+            tool_response_scheduling=FunctionResponseScheduling.WHEN_IDLE,
         ),
         tools=[end_call],
         vad=ai_coustics.VAD(),
