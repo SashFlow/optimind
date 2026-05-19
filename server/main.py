@@ -4,6 +4,9 @@ import os
 from dotenv import load_dotenv
 from livekit.agents import (
     AgentServer,
+    AudioConfig,
+    BackgroundAudioPlayer,
+    BuiltinAudioClip,
     JobContext,
     cli,
     room_io,
@@ -16,10 +19,10 @@ from livekit.protocol.egress import (
     GCPUpload,
 )
 from livekit.plugins import anam, google, ai_coustics
-from livekit.agents.voice import AgentSession, AgentStateChangedEvent
+from livekit.agents.voice import AgentSession, UserStateChangedEvent
 from agents.common import resolve_metadata_payload
 from agents.tools import end_call
-from utils.helper import get_agent, check_for_false_interruption
+from utils.helper import get_agent
 from google.genai.types import FunctionResponseScheduling
 import utils.patch as patch  # noqa: F401
 
@@ -92,20 +95,11 @@ async def entrypoint(ctx: JobContext):
         preemptive_generation=True,
     )
 
-    false_interruption_task: asyncio.Task[None] | None = None
-
-    @session.on("agent_state_changed")
-    def _on_agent_state_changed(ev: AgentStateChangedEvent):
-        nonlocal false_interruption_task
-
-        if false_interruption_task and not false_interruption_task.done():
-            false_interruption_task.cancel()
-            false_interruption_task = None
-
-        if ev.new_state == "listening" and ev.old_state == "speaking":
-            # If we remain in listening unexpectedly, nudge the user for clarification.
-            false_interruption_task = asyncio.create_task(
-                check_for_false_interruption(session)
+    @session.on("user_state_changed")
+    def _on_user_state_changed(ev: UserStateChangedEvent):
+        if ev.new_state == "away":
+            session.generate_reply(
+                instructions="It seems you are away. I'll end the call now. Goodbye!"
             )
 
     if use_avatar:
@@ -163,6 +157,17 @@ async def entrypoint(ctx: JobContext):
             ),
         )
     )
+    background_audio = BackgroundAudioPlayer(
+        # play office ambience sound looping in the background
+        ambient_sound=AudioConfig(BuiltinAudioClip.OFFICE_AMBIENCE, volume=0.8),
+        # play keyboard typing sound when the agent is thinking
+        thinking_sound=[
+            AudioConfig(BuiltinAudioClip.KEYBOARD_TYPING, volume=0.8),
+            AudioConfig(BuiltinAudioClip.KEYBOARD_TYPING2, volume=0.7),
+        ],
+    )
+
+    await background_audio.start(room=ctx.room, agent_session=session)
 
 
 if __name__ == "__main__":

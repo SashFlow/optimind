@@ -10,9 +10,9 @@ from zoneinfo import ZoneInfo
 
 from livekit.agents import RunContext, function_tool
 
-from ..client.appointment_db import create_appointment
-from .base import ScenarioAgent
-from .common import normalize_lookup_key
+from client.appointment_db import create_appointment
+from agents.base import ScenarioAgent
+from agents.common import normalize_lookup_key
 
 logger = logging.getLogger(__name__)
 
@@ -216,6 +216,7 @@ class MedicalAppointmentAgent(ScenarioAgent):
         current_time = datetime.now(INDIA_TZ).strftime("%A, %d %B %Y %H:%M IST")
 
         super().__init__(
+            language=language,
             instructions=f"""
 # Role
 You are {name}, a confident {gender} and friendly outbound voice agent calling on behalf of an insurance
@@ -451,7 +452,7 @@ Sai: "Alright, I understand. Have a great day!" [→ end_call]
 - mark_exam_completed — call when customer reports the exam is already done
 - transfer_to_human — call when identity verification fails or any escalation is needed
 - end_call — call to end the conversation cleanly when the task is complete or in any terminal scenario
-"""
+""",
         )
 
     # -----------------------------------------------------------------------

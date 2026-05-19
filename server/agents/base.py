@@ -14,15 +14,17 @@ logger = logging.getLogger(__name__)
 
 
 class ScenarioAgent(Agent):
-    def __init__(self, *, instructions: str) -> None:
+    def __init__(self, *, instructions: str, language: str = "english") -> None:
         super().__init__(instructions=instructions)
+        self.language = language
 
     async def on_enter(self) -> None:
-        self.session.generate_reply(instructions=SESSION_INSTRUCTIONS)
+        self.session.generate_reply(
+            instructions=SESSION_INSTRUCTIONS + f" IN {self.language}"
+        )
 
     async def on_exit(self) -> None:
-        self.session.generate_reply(
-            instructions="Thank you for your time. Goodbye!")
+        self.session.generate_reply(instructions="Thank you for your time. Goodbye!")
 
     async def clear_widgets(self) -> None:
         await self._send_widget_rpc({"action": "clear"})
@@ -71,8 +73,7 @@ class ScenarioAgent(Agent):
         if remote_participants:
             return remote_participants[0].identity
 
-        raise RuntimeError(
-            "No remote participant available for widget updates.")
+        raise RuntimeError("No remote participant available for widget updates.")
 
     def _room_io(self) -> RoomIO | None:
         return getattr(self.session, "_room_io", None)

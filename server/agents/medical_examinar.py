@@ -181,6 +181,7 @@ QUESTION_CATALOG: dict[str, dict[str, Any]] = {
 class MedicalExaminationAgent(ScenarioAgent):
     def __init__(self, name, gender, language) -> None:
         super().__init__(
+            language=language,
             instructions=f"""
             ROLE:
             You are {name}, a {gender} Medical Examination Assistant, You can help complete peoples insurance Application.
@@ -298,7 +299,7 @@ class MedicalExaminationAgent(ScenarioAgent):
             2. Are you pregnant?
 
             END
- """
+ """,
         )
 
         self._report_sent = False
@@ -649,8 +650,7 @@ class MedicalExaminationAgent(ScenarioAgent):
             question_id = self._clean_text(str(item.get("question_id", "")))
             question = self._clean_text(str(item.get("question", "")))
             answer = self._clean_text(str(item.get("answer", "")))
-            reason = self._clean_text(
-                str(item.get("reason", ""))) or "General response"
+            reason = self._clean_text(str(item.get("reason", ""))) or "General response"
 
             if not question_id:
                 question_id = self._infer_question_id(question)
@@ -781,8 +781,7 @@ class MedicalExaminationAgent(ScenarioAgent):
                 ]
             )
         writer.writerow([])
-        writer.writerow(
-            ["Generated At (UTC)", datetime.now(timezone.utc).isoformat()])
+        writer.writerow(["Generated At (UTC)", datetime.now(timezone.utc).isoformat()])
 
         csv_bytes = buffer.getvalue().encode("utf-8")
         gcp_bucket = os.getenv("GCP_BUCKET_NAME", "").strip()
@@ -802,8 +801,7 @@ class MedicalExaminationAgent(ScenarioAgent):
         try:
             bucket = gcp_storage_client.bucket(gcp_bucket)
             blob = bucket.blob(object_key)
-            blob.upload_from_file(io.BytesIO(csv_bytes),
-                                  content_type="text/csv")
+            blob.upload_from_file(io.BytesIO(csv_bytes), content_type="text/csv")
         except Exception as exc:
             logger.exception("Failed to upload medical report to GCS: %s", exc)
             local_path = self._write_local_report(

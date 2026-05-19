@@ -46,10 +46,7 @@ async def transfer_to_human(ctx: RunContext) -> str:
     the available tools do not support the requested action. Tell the user that you
     are transferring them before calling this tool.
     """
-    job_ctx = get_job_context()
-    if job_ctx is None:
-        logging.error("No job context found when trying to transfer to human.")
-        return "Error: No job context found."
+    await asyncio.sleep(5)
 
     logger.info("Transferring call to human agent as requested by agent.")
 
