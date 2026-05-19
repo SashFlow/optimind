@@ -15,14 +15,14 @@ from livekit.protocol.egress import (
     EncodedFileType,
     GCPUpload,
 )
-from google.genai import types as genai_types
 from livekit.plugins import anam, google, ai_coustics
 from livekit.agents.voice import AgentSession, AgentStateChangedEvent
 from agents.common import resolve_metadata_payload
 from agents.tools import end_call
 from utils.helper import get_agent, check_for_false_interruption
 from google.genai.types import FunctionResponseScheduling
-import utils.patch as patch
+import utils.patch as patch  # noqa: F401
+
 load_dotenv()
 
 logger = logging.getLogger(__name__)
@@ -41,6 +41,12 @@ AGENT_LIB = {
         "avatar": "d3e94c42-b348-4bec-8225-e47a682128a0",
         "voice": "Leda",
     },
+}
+LANGUAGE_DICT = {
+    "English": "en",
+    "Hindi": "hi",
+    "Marathi": "mr",
+    "Bengali": "bn",
 }
 
 
@@ -78,6 +84,7 @@ async def entrypoint(ctx: JobContext):
         llm=google.realtime.RealtimeModel(
             model="gemini-3.1-flash-live-preview",
             voice=agent["voice"],
+            language=LANGUAGE_DICT[language],
             tool_response_scheduling=FunctionResponseScheduling.WHEN_IDLE,
         ),
         tools=[end_call],

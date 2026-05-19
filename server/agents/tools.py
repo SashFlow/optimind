@@ -32,8 +32,8 @@ async def end_call(ctx: RunContext):
     experience. Prefer giving a short closing line before invoking this tool so the
     ending feels natural to the user.
     """
-    logger.info("Ending call as requested by agent.")
-    await asyncio.sleep(8)  # Give the agent time to finish speaking before hanging up
+    await asyncio.sleep(5)
+    ctx.session.shutdown()
     return "Call Ended"
 
 
