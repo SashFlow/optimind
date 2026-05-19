@@ -42,7 +42,7 @@ AGENT_LIB = {
 }
 
 
-@server.rtc_session(agent_name="demo-agent")
+@server.rtc_session(agent_name="demo-agent-6")
 async def entrypoint(ctx: JobContext):
     # Connect to Room
     ctx.log_context_fields = {

@@ -574,4 +574,4 @@ class ReminderAgent(ScenarioAgent):
             await hangup_call()
 
         asyncio.ensure_future(_end_after_delay())
-        return "Say goodbye to the user in a friendly manner and end the call."
+        return "Say goodbye and have a nice dayto the user in a friendly manner and end the call."
