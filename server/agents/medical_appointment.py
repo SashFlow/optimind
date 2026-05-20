@@ -4,7 +4,7 @@ import asyncio
 import logging
 import re
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -198,6 +198,150 @@ def _normalize_phone(raw: str) -> str:
     return digits[-10:] if len(digits) >= 10 else digits
 
 
+_TIME_WORDS: dict[str, str] = {
+    "morning": "09:00",
+    "noon": "12:00",
+    "afternoon": "13:00",
+    "evening": "17:00",
+    "night": "19:00",
+    "midnight": "00:00",
+}
+
+
+def _normalize_appointment_date(raw: str) -> str:
+    """Normalize a spoken or typed appointment date to ISO YYYY-MM-DD.
+
+    Handles:
+      - YYYY-MM-DD (ISO, pass-through)
+      - DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY
+      - "25th May", "25 May 2026", "May 25", "May 25, 2026"
+      - Relative: "today", "tomorrow", "day after tomorrow"
+      - Weekday: "Monday", "next Monday", "coming Friday"
+
+    Returns the original string unchanged if it cannot be parsed.
+    """
+    s = raw.strip()
+    s_lower = re.sub(r"(\d+)(st|nd|rd|th)\b", r"\1", s.lower())
+    today = datetime.now(INDIA_TZ).date()
+
+    # Already ISO YYYY-MM-DD
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", s_lower):
+        return s_lower
+
+    # DD/MM/YYYY or DD-MM-YYYY or DD.MM.YYYY
+    m = re.fullmatch(r"(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})", s_lower)
+    if m:
+        try:
+            d = date(int(m.group(3)), int(m.group(2)), int(m.group(1)))
+            return d.isoformat()
+        except ValueError:
+            pass
+
+    # Relative dates
+    relative: dict[str, date] = {
+        "today": today,
+        "tomorrow": today + timedelta(days=1),
+        "day after tomorrow": today + timedelta(days=2),
+    }
+    if s_lower in relative:
+        return relative[s_lower].isoformat()
+
+    # "next <weekday>" or "coming <weekday>" or bare weekday name
+    weekdays = [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday",
+    ]
+    for i, day_name in enumerate(weekdays):
+        for prefix in ("next ", "coming ", ""):
+            if s_lower == f"{prefix}{day_name}":
+                days_ahead = i - today.weekday()
+                if days_ahead <= 0 or prefix in ("next ", "coming "):
+                    days_ahead += 7
+                return (today + timedelta(days=days_ahead)).isoformat()
+
+    # Spoken: "25 may", "25 may 2026", "may 25", "may 25 2026"
+    m = re.search(
+        r"(\d{1,2})\s+([a-z]+)(?:\s+(\d{4}))?$|^([a-z]+)\s+(\d{1,2})(?:[,\s]+(\d{4}))?$",
+        s_lower,
+    )
+    if m:
+        if m.group(1):
+            day_s, month_s = m.group(1), m.group(2)
+            year_s = m.group(3) or str(today.year)
+        else:
+            month_s, day_s = m.group(4), m.group(5)
+            year_s = m.group(6) or str(today.year)
+        month_num = _MONTH_MAP.get(month_s)
+        if month_num:
+            try:
+                d = date(int(year_s), int(month_num), int(day_s))
+                if d < today:
+                    d = date(d.year + 1, d.month, d.day)
+                return d.isoformat()
+            except ValueError:
+                pass
+
+    return s
+
+
+def _normalize_appointment_time(raw: str) -> str:
+    """Normalize a spoken or typed time to HH:MM (24-hour).
+
+    Handles:
+      - HH:MM or HH:MM:SS (24-hour, pass-through)
+      - "10 AM", "10:30 AM", "10am", "2:30pm"
+      - HHMM (4 digits, e.g. "1030", "1430")
+      - Words: "morning", "noon", "afternoon", "evening", "night"
+
+    Returns the original string unchanged if it cannot be parsed.
+    """
+    s = raw.strip().lower()
+
+    if s in _TIME_WORDS:
+        return _TIME_WORDS[s]
+
+    # HH:MM (24-hour, already normalized)
+    m = re.fullmatch(r"(\d{1,2}):(\d{2})", s)
+    if m:
+        h, mn = int(m.group(1)), int(m.group(2))
+        if 0 <= h <= 23 and 0 <= mn <= 59:
+            return f"{h:02d}:{mn:02d}"
+
+    # HH:MM:SS — strip seconds
+    m = re.fullmatch(r"(\d{1,2}):(\d{2}):\d{2}", s)
+    if m:
+        h, mn = int(m.group(1)), int(m.group(2))
+        if 0 <= h <= 23 and 0 <= mn <= 59:
+            return f"{h:02d}:{mn:02d}"
+
+    # "10am", "10 am", "10:30am", "10:30 am"
+    m = re.fullmatch(r"(\d{1,2})(?::(\d{2}))?(am|pm)", s.replace(" ", ""))
+    if m:
+        h = int(m.group(1))
+        mn = int(m.group(2)) if m.group(2) else 0
+        period = m.group(3)
+        if period == "pm" and h != 12:
+            h += 12
+        elif period == "am" and h == 12:
+            h = 0
+        if 0 <= h <= 23 and 0 <= mn <= 59:
+            return f"{h:02d}:{mn:02d}"
+
+    # HHMM (4 digits: "1030", "0930", "1430")
+    m = re.fullmatch(r"(\d{2})(\d{2})", s)
+    if m:
+        h, mn = int(m.group(1)), int(m.group(2))
+        if 0 <= h <= 23 and 0 <= mn <= 59:
+            return f"{h:02d}:{mn:02d}"
+
+    return raw.strip()
+
+
 # ---------------------------------------------------------------------------
 # Agent
 # ---------------------------------------------------------------------------
@@ -280,7 +424,7 @@ If you are ever unsure which step you are on, call `get_call_status` to check.
 The steps in order are:
   greeting → introduction → verify_dob → verify_phone → explain_purpose → appointment_type
   → [home: home_address → home_datetime] OR [center: center_search → center_select → center_datetime]
-  → confirm_booking → send_notification → close
+  → confirm_booking → close
 
 ## Step 0 — Outbound Greeting
 You are calling {customer_name}. Start the call with in {language} language and ask to speak with them.:
@@ -360,11 +504,7 @@ Summarize the appointment briefly:
 - Home: "Your home visit is scheduled for [date] between [window]."
 - Center: "Your appointment at [center name] is on [date] at [time]."
 
-## Step 10 — Send Confirmation
-Say: "You'll receive the confirmation details on SMS and WhatsApp shortly."
-→ Call send_confirmation_message.
-
-## Step 11 — Close
+## Step 10 — Close
 Say: "Thank you for your time. Have a great day!" // No need to wait for a response here, just end the call after this.
 → Call end_call.
 
@@ -446,7 +586,6 @@ Sai: "Alright, I understand. Have a great day!" [→ end_call]
 - select_center — call with the center_id the customer chose
 - book_center_visit — call with center_id plus the date and time the customer chooses
 - get_call_status — call if you are unsure which step you are on or what has been collected
-- send_confirmation_message — call after any booking is confirmed
 - schedule_callback — call when customer requests or agrees to a callback; pass preferred time if given
 - mark_wrong_number — call immediately when the answering party is not {customer_name}
 - mark_exam_completed — call when customer reports the exam is already done
@@ -467,7 +606,7 @@ Sai: "Alright, I understand. Have a great day!" [→ end_call]
         Pass the raw response — the tool handles format normalization.
 
         Args:
-            dob: Date of birth as spoken or typed by the customer.
+            dob: Date of birth in YYYY-MM-DD.
         """
         self._dob_attempts += 1
         max_attempts = 2
@@ -566,15 +705,17 @@ Sai: "Alright, I understand. Have a great day!" [→ end_call]
         — accept whatever the customer says.
 
         Args:
-            date: Preferred date as stated by the customer (e.g. "25th May", "next Monday").
-            time: Preferred time as stated by the customer (e.g. "10 AM", "morning", "2:30").
+            date: YYYY-MM-DD
+            time: HH:MM (24-hour format)
         """
+        norm_date = _normalize_appointment_date(date)
+        norm_time = _normalize_appointment_time(time)
         self._current_step = "home_datetime"
         self._booking_context.update(
             {
                 "appointment_type": "home_visit",
-                "date": date,
-                "time": time,
+                "date": norm_date,
+                "time": norm_time,
             }
         )
 
@@ -584,8 +725,8 @@ Sai: "Alright, I understand. Have a great day!" [→ end_call]
             "dob": self.validation_details.get("dob", ""),
             "phone_number": self.validation_details.get("phone_number", ""),
             "full_name": self.validation_details.get("full_name", ""),
-            "date": date,
-            "time": time,
+            "date": norm_date,
+            "time": norm_time,
             "appointment_type": "home",
             "exam_type": "Home Collection",
             "pin_code": self._booking_context.get("pin_code", ""),
@@ -602,8 +743,8 @@ Sai: "Alright, I understand. Have a great day!" [→ end_call]
         return {
             "confirmed": True,
             "appointment_id": record.get("appointment_id", payload["appointment_id"]),
-            "date": date,
-            "time": time,
+            "date": norm_date,
+            "time": norm_time,
             "next_step": "confirm_booking",
         }
 
@@ -684,6 +825,8 @@ Sai: "Alright, I understand. Have a great day!" [→ end_call]
             time: Preferred time as stated by the customer.
         """
 
+        norm_date = _normalize_appointment_date(date)
+        norm_time = _normalize_appointment_time(time)
         self._current_step = "center_datetime"
         center = DIAGNOSTIC_CENTERS.get(center_id.upper(), DIAGNOSTIC_CENTERS["C001"])
 
@@ -692,8 +835,8 @@ Sai: "Alright, I understand. Have a great day!" [→ end_call]
                 "appointment_type": "center_visit",
                 "center_id": center_id,
                 "center_name": center["name"],
-                "date": date,
-                "time": time,
+                "date": norm_date,
+                "time": norm_time,
             }
         )
 
@@ -703,8 +846,8 @@ Sai: "Alright, I understand. Have a great day!" [→ end_call]
             "dob": self.validation_details.get("dob", ""),
             "phone_number": self.validation_details.get("phone_number", ""),
             "full_name": self.validation_details.get("full_name", ""),
-            "date": date,
-            "time": time,
+            "date": norm_date,
+            "time": norm_time,
             "appointment_type": "center",
             "exam_type": "Medical Examination",
             "pin_code": "",
@@ -723,31 +866,14 @@ Sai: "Alright, I understand. Have a great day!" [→ end_call]
             "appointment_id": record.get("appointment_id", payload["appointment_id"]),
             "center": center["name"],
             "address": center["address"],
-            "date": date,
-            "time": time,
+            "date": norm_date,
+            "time": norm_time,
             "next_step": "confirm_booking",
         }
 
     # -----------------------------------------------------------------------
     # Notification & flow control tools
     # -----------------------------------------------------------------------
-
-    @function_tool()
-    async def send_confirmation_message(self, context: RunContext) -> dict[str, Any]:
-        """Send appointment confirmation to the customer via SMS and WhatsApp.
-
-        Call this immediately after the booking is confirmed.
-        """
-        self._current_step = "send_notification"
-        phone = self.validation_details.get("phone_number", "")
-        masked = f"XXXXXX{phone[-4:]}" if len(phone) >= 4 else "XXXXXXXXXX"
-
-        return {
-            "sent": True,
-            "channels": ["SMS", "WhatsApp"],
-            "phone": masked,
-            "next_step": "close",
-        }
 
     @function_tool()
     async def schedule_callback(
@@ -803,8 +929,7 @@ Sai: "Alright, I understand. Have a great day!" [→ end_call]
             "center_search": "center_select",
             "center_select": "center_datetime",
             "center_datetime": "confirm_booking",
-            "confirm_booking": "send_notification",
-            "send_notification": "close",
+            "confirm_booking": "close",
             "close": "done",
         }
 

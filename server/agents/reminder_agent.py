@@ -11,7 +11,13 @@ from livekit.agents import RunContext, function_tool
 from client.appointment_db import reschedule_appointment as db_reschedule_appointment
 from agents.base import ScenarioAgent
 from agents.common import normalize_lookup_key
-from .medical_appointment import DIAGNOSTIC_CENTERS
+from .medical_appointment import (
+    DIAGNOSTIC_CENTERS,
+    _normalize_dob,
+    _normalize_phone,
+    _normalize_appointment_date,
+    _normalize_appointment_time,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -471,20 +477,24 @@ Agent: "Of course. What time works best for you?" [→ schedule_callback → end
         await asyncio.sleep(2)
         self._current_step = "reschedule_booking"
 
+        norm_date = _normalize_appointment_date(new_date)
+        norm_time = _normalize_appointment_time(new_time)
         final_exam_type = exam_type or self._booking_context.get("exam_type", "")
         final_pin_code = pin_code or self._booking_context.get("pin_code", "")
         final_address = address or self._booking_context.get("address", "")
 
-        phone = self.validation_details.get("phone_number", "")
-        dob = self.validation_details.get("dob", "")
+        phone = _normalize_phone(self.validation_details.get("phone_number", ""))
+        dob = _normalize_dob(
+            self.validation_details.get("dob", "")
+        ) or self.validation_details.get("dob", "")
 
         try:
             record = await asyncio.to_thread(
                 db_reschedule_appointment,
                 phone,
                 dob,
-                new_date,
-                new_time,
+                norm_date,
+                norm_time,
                 final_exam_type,
                 final_pin_code,
                 final_address,
@@ -503,8 +513,8 @@ Agent: "Of course. What time works best for you?" [→ schedule_callback → end
         return {
             "rescheduled": True,
             "appointment_id": record.get("appointment_id", ""),
-            "date": new_date,
-            "time": new_time,
+            "date": norm_date,
+            "time": norm_time,
             "exam_type": final_exam_type,
             "address": final_address or record.get("address", ""),
             "center_name": self._booking_context.get("center_name", ""),

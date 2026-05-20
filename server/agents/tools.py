@@ -46,7 +46,9 @@ async def transfer_to_human(ctx: RunContext) -> str:
     the available tools do not support the requested action. Tell the user that you
     are transferring them before calling this tool.
     """
-    await asyncio.sleep(5)
+    ctx.session.generate_reply(
+        instructions="Transferring you to a human agent now. and then ending the call."
+    )
 
     logger.info("Transferring call to human agent as requested by agent.")
 
