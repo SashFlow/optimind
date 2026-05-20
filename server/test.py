@@ -1,24 +1,19 @@
-import asyncio
 import logging
-import time
 from dotenv import load_dotenv
 from livekit.agents import (
     AgentServer,
-    JobContext,
-    UserStateChangedEvent,
+    AudioConfig,
     BackgroundAudioPlayer,
     BuiltinAudioClip,
-    AudioConfig,
+    JobContext,
     cli,
     room_io,
 )
 from livekit.plugins import google, ai_coustics
-from livekit.agents.voice import AgentSession
+from livekit.agents.voice import AgentSession, UserStateChangedEvent
 from agents.tools import end_call
-from agents.reminder_agent import ReminderAgent
-from google.genai.types import (
-    FunctionResponseScheduling,
-)
+from utils.helper import get_agent
+from google.genai.types import FunctionResponseScheduling
 import utils.patch as patch  # noqa: F401
 
 load_dotenv()
@@ -28,8 +23,27 @@ logger.setLevel(logging.INFO)
 
 server = AgentServer()
 
+AGENT_LIB = {
+    "Sanjay": {
+        "gender": "male",
+        "avatar": "5f46f99e-c4be-4f22-bde2-b364975a0851",
+        "voice": "Charon",
+    },
+    "Samira": {
+        "gender": "female",
+        "avatar": "d3e94c42-b348-4bec-8225-e47a682128a0",
+        "voice": "Leda",
+    },
+}
+LANGUAGE_DICT = {
+    "English": "en",
+    "Hindi": "hi",
+    "Marathi": "mr",
+    "Bengali": "bn",
+}
 
-@server.rtc_session(agent_name="demo-agent-6")
+
+@server.rtc_session(agent_name="demo-agent")
 async def entrypoint(ctx: JobContext):
     # Connect to Room
     ctx.log_context_fields = {
@@ -37,6 +51,17 @@ async def entrypoint(ctx: JobContext):
     }
     await ctx.connect()
 
+    # Session Creation Modify the following to change interactions
+    
+    slug = "medical-appointment" # medical-appointment, medical-examination, reminder-agent
+    selected_agent = "Sanjay" # Sanajay, Samira
+    language = "Hindi" # any Language
+    persona = {
+        "full_name": "Rohit",
+        "phone_number": "9958684675",
+        "dob": "2000-08-20"
+    }
+    
     room_options = room_io.RoomOptions(
         audio_input=room_io.AudioInputOptions(
             noise_cancellation=ai_coustics.audio_enhancement(
@@ -48,54 +73,37 @@ async def entrypoint(ctx: JobContext):
         audio_output=room_io.AudioOutputOptions(),
     )
 
+    agent = AGENT_LIB[selected_agent]
     session = AgentSession(
         llm=google.realtime.RealtimeModel(
             model="gemini-3.1-flash-live-preview",
-            voice="Leda",
-            language="hi",
+            voice=agent["voice"],
+            language=LANGUAGE_DICT[language],
             tool_response_scheduling=FunctionResponseScheduling.WHEN_IDLE,
         ),
         tools=[end_call],
         vad=ai_coustics.VAD(),
         preemptive_generation=True,
-        resume_false_interruption=True,
+        user_away_timeout=30,
     )
 
     @session.on("user_state_changed")
     def _on_user_state_changed(ev: UserStateChangedEvent):
-        print(ev.new_state, ev.old_state)
         if ev.new_state == "away":
             session.generate_reply(
                 instructions="It seems you are away. I'll end the call now. Goodbye!"
             )
 
     await session.start(
-        agent=ReminderAgent(
-            "Samira",
-            "Female",
-            "Hindi",
-            validation_details={
-                "phone_number": "+919958684675",
-                "dob": "2000-07-20",
-                "full_name": "Sahil",
-            },
-            appointment={
-                "appointment_type": "Medical Examination",
-                "date": "2026-05-27",
-                "time": "10:00 AM",
-                "address": "807, Prathameshwar, MG Road, Bengaluru",
-                "pin_code": "560001",
-                "exam_type": "Home Visit",
-                "location": "HealthCare Clinic, 123 Main St.",
-            },
-        ),
+        agent=get_agent(slug, selected_agent, agent, language, persona),
         room=ctx.room,
         room_options=room_options,
     )
 
     background_audio = BackgroundAudioPlayer(
         # play office ambience sound looping in the background
-        ambient_sound=AudioConfig(BuiltinAudioClip.OFFICE_AMBIENCE, volume=0.8),
+        ambient_sound=AudioConfig(
+            BuiltinAudioClip.OFFICE_AMBIENCE, volume=0.8),
         # play keyboard typing sound when the agent is thinking
         thinking_sound=[
             AudioConfig(BuiltinAudioClip.KEYBOARD_TYPING, volume=0.8),
