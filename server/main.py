@@ -93,6 +93,7 @@ async def entrypoint(ctx: JobContext):
         tools=[end_call],
         vad=ai_coustics.VAD(),
         preemptive_generation=True,
+        user_away_timeout=30,
     )
 
     @session.on("user_state_changed")
