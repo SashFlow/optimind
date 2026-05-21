@@ -53,7 +53,7 @@ LANGUAGE_DICT = {
 }
 
 
-@server.rtc_session(agent_name="demo-agent")
+@server.rtc_session(agent_name="demo-agent-6")
 async def entrypoint(ctx: JobContext):
     # Connect to Room
     ctx.log_context_fields = {
@@ -85,9 +85,9 @@ async def entrypoint(ctx: JobContext):
     agent = AGENT_LIB[selected_agent]
     session = AgentSession(
         llm=google.realtime.RealtimeModel(
-            model="gemini-3.1-flash-live-preview",
+            model="gemini-live-2.5-flash-native-audio",
+            vertexai=True,
             voice=agent["voice"],
-            language=LANGUAGE_DICT[language],
             tool_response_scheduling=FunctionResponseScheduling.WHEN_IDLE,
         ),
         tools=[end_call],
