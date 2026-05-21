@@ -85,9 +85,9 @@ async def entrypoint(ctx: JobContext):
     agent = AGENT_LIB[selected_agent]
     session = AgentSession(
         llm=google.realtime.RealtimeModel(
-            model="gemini-live-2.5-flash-native-audio",
-            vertexai=True,
+            model="gemini-3.1-flash-live-preview",
             voice=agent["voice"],
+            language=LANGUAGE_DICT.get(language, "en"),
             tool_response_scheduling=FunctionResponseScheduling.WHEN_IDLE,
         ),
         tools=[end_call],

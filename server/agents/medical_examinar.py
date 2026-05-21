@@ -266,7 +266,7 @@ class MedicalExaminationAgent(ScenarioAgent):
 
             ID VERIFICATION CATEGORY:
 
-            1. Could you confirm your date of birth (dd mm yyyy)?
+            1. Could you confirm your date of birth?
             2. What is your gender? (Male, Female, you must remember this throughout the conversation as it will determine some of the follow up questions you will ask) 
             3. What is your Height and Weight?
 
