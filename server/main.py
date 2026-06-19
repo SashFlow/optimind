@@ -11,6 +11,7 @@ from livekit.agents import (
     cli,
     room_io,
 )
+import json
 from livekit import api
 from livekit.protocol.egress import (
     EncodedFileOutput,
@@ -51,6 +52,18 @@ LANGUAGE_DICT = {
     "Marathi": "mr",
     "Bengali": "bn",
 }
+
+
+def load_gcp_credentials_json():
+    creds_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "").strip()
+    if creds_path and os.path.exists(creds_path):
+        with open(creds_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    default_creds = "./creds.json"
+    if os.path.exists(default_creds):
+        with open(default_creds, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return None
 
 
 @server.rtc_session(agent_name="demo-agent")
@@ -154,6 +167,7 @@ async def entrypoint(ctx: JobContext):
                 filepath=f"{ctx.room.name}/recording-session.mp4",
                 gcp=GCPUpload(
                     bucket=os.getenv("GCP_BUCKET_NAME", "").strip(),
+                    credentials=load_gcp_credentials_json(),
                 ),
             ),
         )
