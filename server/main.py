@@ -167,7 +167,7 @@ async def entrypoint(ctx: JobContext):
                 filepath=f"{ctx.room.name}/recording-session.mp4",
                 gcp=GCPUpload(
                     bucket=os.getenv("GCP_BUCKET_NAME", "").strip(),
-                    credentials=load_gcp_credentials_json(),
+                    credentials=os.getenv("GCP_SERVICE_ACCOUNT_JSON", "").strip(),
                 ),
             ),
         )
