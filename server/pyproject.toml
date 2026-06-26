@@ -8,7 +8,7 @@ dependencies = [
     "google-cloud-storage>=2.19.0",
     "google-genai>=1.73.1",
     "livekit>=1.1.8",
-    "livekit-agents[anam,google]>=1.5.10",
+    "livekit-agents[anam,cartesia,deepgram,google,silero]>=1.5.10",
     "livekit-plugins-ai-coustics==0.2.14",
     "livekit-plugins-google>=1.5.10",
     "livekit-plugins-turn-detector>=1.5.10",

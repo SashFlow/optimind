@@ -408,7 +408,7 @@ dependencies = [
     { name = "google-cloud-storage" },
     { name = "google-genai" },
     { name = "livekit" },
-    { name = "livekit-agents", extra = ["anam", "google"] },
+    { name = "livekit-agents", extra = ["anam", "cartesia", "deepgram", "google", "silero"] },
     { name = "livekit-plugins-ai-coustics" },
     { name = "livekit-plugins-google" },
     { name = "livekit-plugins-turn-detector" },
@@ -424,7 +424,7 @@ requires-dist = [
     { name = "google-cloud-storage", specifier = ">=2.19.0" },
     { name = "google-genai", specifier = ">=1.73.1" },
     { name = "livekit", specifier = ">=1.1.8" },
-    { name = "livekit-agents", extras = ["anam", "google"], specifier = ">=1.5.10" },
+    { name = "livekit-agents", extras = ["anam", "cartesia", "deepgram", "google", "silero"], specifier = ">=1.5.10" },
     { name = "livekit-plugins-ai-coustics", specifier = "==0.2.14" },
     { name = "livekit-plugins-google", specifier = ">=1.5.10" },
     { name = "livekit-plugins-turn-detector", specifier = ">=1.5.10" },
@@ -1105,8 +1105,20 @@ wheels = [
 anam = [
     { name = "livekit-plugins-anam" },
 ]
+cartesia = [
+    { name = "livekit-plugins-cartesia" },
+]
+codecs = [
+    { name = "numpy" },
+]
+deepgram = [
+    { name = "livekit-plugins-deepgram" },
+]
 google = [
     { name = "livekit-plugins-google" },
+]
+silero = [
+    { name = "livekit-plugins-silero" },
 ]
 
 [[package]]
@@ -1182,6 +1194,31 @@ wheels = [
 ]
 
 [[package]]
+name = "livekit-plugins-cartesia"
+version = "1.5.10"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "livekit-agents" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/cf/6f/3e8962201372f7b9e663412ed71f42131a6efdd72d5afefd290408556664/livekit_plugins_cartesia-1.5.10.tar.gz", hash = "sha256:f71fe6275a704d6a1fc9f1c2c7d62ce73296854bee493e33735954a0f06c5f94", size = 12825, upload-time = "2026-05-18T03:59:36.864Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9c/87/d72adfb21339cdf2d5542c6622f1f106e038a0b8caa09826994682a6c140/livekit_plugins_cartesia-1.5.10-py3-none-any.whl", hash = "sha256:aac2dac879078a19aba06b0113ed6fa7e068e9ceca4c8e61ea0b8a56e2368da0", size = 15752, upload-time = "2026-05-18T03:59:35.102Z" },
+]
+
+[[package]]
+name = "livekit-plugins-deepgram"
+version = "1.5.10"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "livekit-agents", extra = ["codecs"] },
+    { name = "numpy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e3/6f/3be76972691e22c81637a372796b526c4a32068f48a40f31cf8949eb562b/livekit_plugins_deepgram-1.5.10.tar.gz", hash = "sha256:81036a64a6c76c599e2ed70b635d0ea9af21f6f83722c971bd9bde4654a501f1", size = 18334, upload-time = "2026-05-18T03:59:35.432Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/04/b8/c69eee5dd5e5f62c8c65cc60d8fd40d8ac0b98afb1324ad7328bcaed7f92/livekit_plugins_deepgram-1.5.10-py3-none-any.whl", hash = "sha256:25d13f5d83f4e41a947e351d1901d9930116708cdd843b7d35ee738f8b4fe9e6", size = 23060, upload-time = "2026-05-18T03:59:34.378Z" },
+]
+
+[[package]]
 name = "livekit-plugins-google"
 version = "1.5.10"
 source = { registry = "https://pypi.org/simple" }
@@ -1195,6 +1232,20 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/48/a4/46ad61a155e4366617a15d4e75894cf83d7435880e7f150e9f799f311d9c/livekit_plugins_google-1.5.10.tar.gz", hash = "sha256:cf7f9178e8e60efc216ca22ada1647471860721eadc9e07dd9e486b9ac979886", size = 41838, upload-time = "2026-05-18T03:59:56.701Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/fe/c6/6bb61a78053afe537c0d11ebec333227076d5b2f660e737f287548404e0a/livekit_plugins_google-1.5.10-py3-none-any.whl", hash = "sha256:4526c7450c1834fcc0cc8926cacc460df177005cdb81b42848f536a475ce32c3", size = 48099, upload-time = "2026-05-18T03:59:55.548Z" },
+]
+
+[[package]]
+name = "livekit-plugins-silero"
+version = "1.5.10"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "livekit-agents" },
+    { name = "numpy" },
+    { name = "onnxruntime" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/25/0c/36b97028010905a6fb829435667265bfd13149ea8dbeb696e56b5fb07169/livekit_plugins_silero-1.5.10.tar.gz", hash = "sha256:e5b24853bed1e5d59fefc03aa3c2a3b5752800b4f9dee3647773fd17abe7dde1", size = 1955611, upload-time = "2026-05-18T04:01:19.961Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/34/9d/50eac1e01df3a77e710ad5ddfda220ed0de2ead45e0438d38109ab3c96bb/livekit_plugins_silero-1.5.10-py3-none-any.whl", hash = "sha256:b5ecf1483853ecd45241f385be3020015c5e0e56c2a26a80bc317d144ccff0ba", size = 3903699, upload-time = "2026-05-18T04:01:18.072Z" },
 ]
 
 [[package]]
