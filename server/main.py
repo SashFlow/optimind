@@ -11,6 +11,7 @@ from livekit.agents import (
     cli,
     room_io,
 )
+import json
 from livekit import api
 from livekit.protocol.egress import (
     EncodedFileOutput,
@@ -53,6 +54,18 @@ LANGUAGE_DICT = {
 }
 
 
+def load_gcp_credentials_json():
+    creds_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "").strip()
+    if creds_path and os.path.exists(creds_path):
+        with open(creds_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    default_creds = "./creds.json"
+    if os.path.exists(default_creds):
+        with open(default_creds, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return None
+
+
 @server.rtc_session(agent_name="demo-agent")
 async def entrypoint(ctx: JobContext):
     # Connect to Room
@@ -87,7 +100,7 @@ async def entrypoint(ctx: JobContext):
         llm=google.realtime.RealtimeModel(
             model="gemini-3.1-flash-live-preview",
             voice=agent["voice"],
-            language=LANGUAGE_DICT[language],
+            language=LANGUAGE_DICT.get(language, "en"),
             tool_response_scheduling=FunctionResponseScheduling.WHEN_IDLE,
         ),
         tools=[end_call],
@@ -154,6 +167,7 @@ async def entrypoint(ctx: JobContext):
                 filepath=f"{ctx.room.name}/recording-session.mp4",
                 gcp=GCPUpload(
                     bucket=os.getenv("GCP_BUCKET_NAME", "").strip(),
+                    credentials=os.getenv("GCP_SERVICE_ACCOUNT_JSON", "").strip(),
                 ),
             ),
         )

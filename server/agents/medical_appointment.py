@@ -663,6 +663,7 @@ class MedicalAppointmentAgent(ScenarioAgent):
         Args:
             preferred_time: Customer's preferred callback time (free text). Optional.
         """
+        await asyncio.sleep(2)  # Simulate thinking time before responding
         callback_time = preferred_time.strip() if preferred_time else "within 2 hours"
         return {
             "scheduled": True,
