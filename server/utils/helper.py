@@ -6,6 +6,7 @@ from livekit.agents import AgentSession
 from agents.medical_examinar import MedicalExaminationAgent
 from agents.reminder_agent import ReminderAgent
 from agents.medical_appointment import MedicalAppointmentAgent
+from agents.insurance_feedback import InsuranceFeedbackAgent
 
 
 def get_agent(slug, selected_agent, agent, language, persona):
@@ -15,18 +16,23 @@ def get_agent(slug, selected_agent, agent, language, persona):
         return MedicalAppointmentAgent(
             selected_agent, agent["gender"], language, validation_details=persona
         )
-    else:
-        from client.appointment_db import get_latest_confirmed_booking
-
-        appointment = get_latest_confirmed_booking(
-            persona.get("phone_number", ""), persona.get("dob", "")
+    elif slug == "insurance-feedback":
+        return InsuranceFeedbackAgent(
+            selected_agent, agent["gender"], validation_details=persona
         )
+    elif slug == "reminder-call":
         return ReminderAgent(
             selected_agent,
             agent["gender"],
             language,
             validation_details=persona,
-            appointment=appointment,
+        )
+    else:
+        return ReminderAgent(
+            selected_agent,
+            agent["gender"],
+            language,
+            validation_details=persona,
         )
 
 

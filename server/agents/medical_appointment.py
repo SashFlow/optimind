@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
+import random
 import uuid
 from datetime import date, datetime, timedelta
 from typing import Any
@@ -13,7 +14,7 @@ from livekit.agents import RunContext, function_tool
 from client.appointment_db import create_appointment
 from agents.base import ScenarioAgent
 from agents.common import normalize_lookup_key
-from agents.lib import MEDICAL_APPOINTMENT_PROMPT
+from agents.lib import MAX_MEDICAL_APPOINTMENT_PROMPT, MEDICAL_APPOINTMENT_PROMPT
 
 logger = logging.getLogger(__name__)
 
@@ -129,76 +130,6 @@ _MONTH_MAP: dict[str, str] = {
 }
 
 
-def _normalize_dob(raw: str) -> str | None:
-    """Parse common spoken and typed DOB formats into ISO YYYY-MM-DD.
-
-    Handles:
-      - DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY
-      - YYYY-MM-DD  (ISO)
-      - DDMMYYYY    (8 digits, no separator)
-      - "15th August 1992", "August 15 1992", "15 August 1992"
-    Returns None if the input cannot be parsed.
-    """
-    s = raw.strip().lower()
-
-    # Remove ordinal suffixes: 1st → 1, 2nd → 2, etc.
-    s = re.sub(r"(\d+)(st|nd|rd|th)\b", r"\1", s)
-
-    # --- Numeric formats ---
-    # YYYY-MM-DD or YYYY/MM/DD
-    m = re.fullmatch(r"(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})", s)
-    if m:
-        try:
-            d = date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
-            return d.isoformat()
-        except ValueError:
-            return None
-
-    # DD/MM/YYYY or DD-MM-YYYY or DD.MM.YYYY
-    m = re.fullmatch(r"(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})", s)
-    if m:
-        try:
-            d = date(int(m.group(3)), int(m.group(2)), int(m.group(1)))
-            return d.isoformat()
-        except ValueError:
-            return None
-
-    # DDMMYYYY (exactly 8 digits)
-    m = re.fullmatch(r"(\d{2})(\d{2})(\d{4})", s)
-    if m:
-        try:
-            d = date(int(m.group(3)), int(m.group(2)), int(m.group(1)))
-            return d.isoformat()
-        except ValueError:
-            return None
-
-    # --- Spoken formats ---
-    # "15 august 1992" or "august 15 1992"
-    m = re.search(
-        r"(\d{1,2})\s+([a-z]+)\s+(\d{4})|([a-z]+)\s+(\d{1,2})[,\s]+(\d{4})", s
-    )
-    if m:
-        if m.group(1):
-            day_s, month_s, year_s = m.group(1), m.group(2), m.group(3)
-        else:
-            month_s, day_s, year_s = m.group(4), m.group(5), m.group(6)
-        month_num = _MONTH_MAP.get(month_s)
-        if month_num:
-            try:
-                d = date(int(year_s), int(month_num), int(day_s))
-                return d.isoformat()
-            except ValueError:
-                return None
-
-    return None
-
-
-def _normalize_phone(raw: str) -> str:
-    """Return the last 10 digits of any phone-like input."""
-    digits = re.sub(r"\D", "", raw or "")
-    return digits[-10:] if len(digits) >= 10 else digits
-
-
 _TIME_WORDS: dict[str, str] = {
     "morning": "09:00",
     "noon": "12:00",
@@ -207,6 +138,51 @@ _TIME_WORDS: dict[str, str] = {
     "night": "19:00",
     "midnight": "00:00",
 }
+
+INSURANCE_COMPANIES = [
+    "Axis Max-Life Insurance",
+    "HDFC Life Insurance",
+    "ICICI Prudential Life Insurance",
+]
+
+ADDRESSES = [
+    {
+        "pin_code": "560034",
+        "address": "45 Koramangala Industrial Layout, Bangalore",
+    },
+    {
+        "pin_code": "560038",
+        "address": "12th Main, HAL 2nd Stage, Indiranagar, Bangalore",
+    },
+    {
+        "pin_code": "560066",
+        "address": "Prestige Tech Park, Whitefield, Bangalore",
+    },
+    {
+        "pin_code": "400059",
+        "address": "Silver Arcade, J.B. Nagar, Andheri East, Mumbai",
+    },
+    {
+        "pin_code": "400051",
+        "address": "Plot 1, Bandra Kurla Complex, Bandra East, Mumbai",
+    },
+    {
+        "pin_code": "400076",
+        "address": "Hiranandani Business Park, Powai, Mumbai",
+    },
+    {
+        "pin_code": "110024",
+        "address": "Central Market, Lajpat Nagar II, New Delhi",
+    },
+    {
+        "pin_code": "110070",
+        "address": "Fortis Healthcare Complex, Vasant Kunj, New Delhi",
+    },
+    {
+        "pin_code": "500034",
+        "address": "Road No. 2, Banjara Hills, Hyderabad",
+    },
+]
 
 
 def _normalize_appointment_date(raw: str) -> str:
@@ -353,124 +329,55 @@ class MedicalAppointmentAgent(ScenarioAgent):
         self, name: str, gender: str, language: str, validation_details: dict
     ) -> None:
         self.validation_details = validation_details
-        self._booking_context: dict[str, Any] = {}
         self._dob_attempts: int = 0
         self._current_step: str = "greeting"
 
         customer_name = validation_details.get("full_name", "the customer")
+        company_name = random.choice(INSURANCE_COMPANIES)
         current_time = datetime.now(INDIA_TZ).strftime("%A, %d %B %Y %H:%M IST")
+        is_home_visit_available = random.choice([True, False])
+        is_axis_max_life = company_name == "Axis Max-Life Insurance"
+        address = random.choice(ADDRESSES)
+        center = random.choice(DIAGNOSTIC_CENTERS.values())
+        self._booking_context = {
+            "pin_code": address["pin_code"],
+            "address": address["address"],
+            "center_name": center["name"],
+            "center_address": center["address"],
+        }
 
         super().__init__(
             language=language,
-            instructions=MEDICAL_APPOINTMENT_PROMPT.format(
+            instructions=MAX_MEDICAL_APPOINTMENT_PROMPT.format(
                 name=name,
                 gender=gender,
-                language=language,
+                company_name=company_name,
                 current_time=current_time,
                 customer_name=customer_name,
+                pin_code=address["pin_code"],
+                address=address["address"],
+                is_home_visit_available=is_home_visit_available,
+                center_name=center["name"],
+                center_address=center["address"],
+            )
+            if is_axis_max_life
+            else MEDICAL_APPOINTMENT_PROMPT.format(
+                name=name,
+                gender=gender,
+                current_time=current_time,
+                company_name=company_name,
+                customer_name=customer_name,
+                pin_code=address["pin_code"],
+                address=address["address"],
+                is_home_visit_available=is_home_visit_available,
+                center_name=center["name"],
+                center_address=center["address"],
             ),
         )
 
     # -----------------------------------------------------------------------
-    # Identity verification tools
-    # -----------------------------------------------------------------------
-
-    @function_tool()
-    async def verify_dob(self, context: RunContext, dob: str) -> dict[str, Any]:
-        """Verify the customer's date of birth against the registered record.
-
-        Call this immediately after the customer provides their date of birth.
-        Pass the raw response — the tool handles format normalization.
-
-        Args:
-            dob: Date of birth in YYYY-MM-DD.
-        """
-        self._dob_attempts += 1
-        max_attempts = 2
-        attempts_remaining = max(0, max_attempts - self._dob_attempts)
-
-        stored_iso = self.validation_details.get("dob", "")
-        parsed_iso = _normalize_dob(dob)
-        verified = parsed_iso is not None and parsed_iso == stored_iso
-
-        if verified:
-            self._current_step = "verify_dob"
-            return {
-                "verified": True,
-                "attempts_remaining": attempts_remaining,
-                "next_step": "verify_phone",
-            }
-        return {
-            "verified": False,
-            "attempts_remaining": attempts_remaining,
-            "next_step": "retry_dob" if attempts_remaining > 0 else "escalate",
-        }
-
-    @function_tool()
-    async def verify_phone(
-        self, context: RunContext, phone_number: str
-    ) -> dict[str, Any]:
-        """Verify the customer's registered mobile number.
-
-        Accepts full 10-digit number, last 4 digits, or number with country code.
-
-        Args:
-            phone_number: Mobile number or last four digits as given by the customer.
-        """
-        stored = _normalize_phone(self.validation_details.get("phone_number", ""))
-        provided = _normalize_phone(phone_number)
-
-        # Accept last-4 shorthand or full match
-        verified = (len(provided) == 4 and stored.endswith(provided)) or (
-            len(provided) == 10 and provided == stored
-        )
-
-        if verified:
-            self._current_step = "verify_phone"
-            return {"verified": True, "next_step": "explain_purpose"}
-        return {"verified": False, "next_step": "escalate"}
-
-    # -----------------------------------------------------------------------
     # Home visit tools
     # -----------------------------------------------------------------------
-
-    @function_tool()
-    async def save_home_visit_address(
-        self,
-        context: RunContext,
-        house: str,
-        street: str,
-        area: str,
-        city: str,
-        pin_code: str,
-        landmark: str = "",
-    ) -> dict[str, Any]:
-        """Save the customer's home address for the medical visit.
-
-        Call this after the customer has confirmed all address components.
-
-        Args:
-            house: House or flat number.
-            street: Street or road name.
-            area: Locality or neighbourhood.
-            city: City name.
-            pin_code: 6-digit Indian postal code.
-            landmark: Optional nearby landmark for the technician.
-        """
-        parts = [house, street, area, city, f"PIN {pin_code}"]
-        if landmark:
-            parts.append(f"Near {landmark}")
-        full_address = ", ".join(p.strip() for p in parts if p.strip())
-
-        self._current_step = "home_address"
-        self._booking_context["address"] = full_address
-        self._booking_context["pin_code"] = pin_code
-        self._booking_context["appointment_type"] = "home_visit"
-        return {
-            "saved": True,
-            "full_address": full_address,
-            "next_step": "home_datetime",
-        }
 
     @function_tool()
     async def book_home_visit(
@@ -524,68 +431,6 @@ class MedicalAppointmentAgent(ScenarioAgent):
             "time": norm_time,
             "next_step": "confirm_booking",
         }
-
-    # -----------------------------------------------------------------------
-    # Center visit tools
-    # -----------------------------------------------------------------------
-
-    @function_tool()
-    async def search_nearby_centers(
-        self, context: RunContext, location: str
-    ) -> dict[str, Any]:
-        """Find nearby diagnostic centers for the customer's preferred area or city.
-
-        Args:
-            location: Area name, locality, or city provided by the customer.
-        """
-
-        self._current_step = "center_search"
-        key = normalize_lookup_key(location)
-
-        # Match on city or area name (case-insensitive substring)
-        matches = [
-            {"id": cid, **info}
-            for cid, info in DIAGNOSTIC_CENTERS.items()
-            if key in normalize_lookup_key(info["city"])
-            or key in normalize_lookup_key(info["area"])
-        ]
-
-        # Fall back to Bangalore centers if no city match
-        if not matches:
-            matches = [
-                {"id": cid, **info}
-                for cid, info in DIAGNOSTIC_CENTERS.items()
-                if info["city"] == "Bangalore"
-            ]
-
-        # Return at most 3 centers
-        matches = matches[:3]
-        return {"centers": matches, "next_step": "center_select"}
-
-    @function_tool()
-    async def select_center(
-        self, context: RunContext, center_id: str
-    ) -> dict[str, Any]:
-        """Confirm the customer's chosen diagnostic center.
-
-        Args:
-            center_id: The center identifier (e.g. C001).
-        """
-
-        self._current_step = "center_select"
-        center = DIAGNOSTIC_CENTERS.get(center_id.upper())
-        if center is None:
-            center_id = "C001"
-            center = DIAGNOSTIC_CENTERS[center_id]
-
-        self._booking_context.update(
-            {
-                "appointment_type": "center_visit",
-                "center_id": center_id,
-                "center_name": center["name"],
-            }
-        )
-        return {"selected": True, "center": center, "next_step": "center_datetime"}
 
     @function_tool()
     async def book_center_visit(
@@ -670,51 +515,3 @@ class MedicalAppointmentAgent(ScenarioAgent):
             "callback_time": callback_time,
             "next_step": "close",
         }
-
-    @function_tool()
-    async def mark_wrong_number(self, context: RunContext) -> dict[str, Any]:
-        """Mark this contact as a wrong number and update the record.
-
-        Call immediately when the answering party confirms they are not the
-        intended customer.
-        """
-        return {"updated": True, "status": "wrong_number"}
-
-    @function_tool()
-    async def mark_exam_completed(self, context: RunContext) -> dict[str, Any]:
-        """Mark the medical examination as already completed by the customer.
-
-        Call when the customer reports they have already done the exam.
-        """
-        return {"updated": True, "status": "exam_completed"}
-
-    @function_tool()
-    async def get_call_status(self, context: RunContext) -> dict[str, Any]:
-        """Return the current step and all data collected so far in this call.
-
-        Call this whenever you are unsure which step you are on, what information
-        has already been gathered, or what to do next.
-        """
-        step_next_map: dict[str, str] = {
-            "greeting": "introduction",
-            "introduction": "verify_dob",
-            "verify_dob": "verify_phone",
-            "verify_phone": "explain_purpose",
-            "explain_purpose": "appointment_type",
-            "appointment_type": "home_address or center_search",
-            "home_address": "home_datetime",
-            "home_datetime": "confirm_booking",
-            "center_search": "center_select",
-            "center_select": "center_datetime",
-            "center_datetime": "confirm_booking",
-            "confirm_booking": "close",
-            "close": "done",
-        }
-
-        ctx = {
-            "current_step": self._current_step,
-            "next_step": step_next_map.get(self._current_step, "unknown"),
-            "dob_attempts_used": self._dob_attempts,
-            "collected": {k: v for k, v in self._booking_context.items()},
-        }
-        return ctx

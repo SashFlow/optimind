@@ -1,249 +1,144 @@
-from __future__ import annotations
-
 import asyncio
 import logging
-from datetime import date, datetime
+from datetime import datetime
 from typing import Any
 from zoneinfo import ZoneInfo
-
+import random
 from livekit.agents import RunContext, function_tool
 
 from client.appointment_db import reschedule_appointment as db_reschedule_appointment
 from agents.base import ScenarioAgent
-from agents.common import normalize_lookup_key
 from .medical_appointment import (
-    DIAGNOSTIC_CENTERS,
-    _normalize_dob,
-    _normalize_phone,
+    INSURANCE_COMPANIES,
     _normalize_appointment_date,
     _normalize_appointment_time,
 )
-from agents.lib import REMINDER_AGENT_PROMPT
+from agents.lib import REMINDER_AGENT_PROMPT, MAX_REMINDER_AGENT_PROMPT
 
 logger = logging.getLogger(__name__)
 
 INDIA_TZ = ZoneInfo("Asia/Kolkata")
 
 
-def _format_appointment_summary(appointment: dict | None) -> str:
-    if not appointment:
-        return "No existing appointment found in the system."
-    appt_type = appointment.get("appointment_type", "unknown")
-    type_label = "Home Visit" if appt_type == "home" else "Diagnostic Center Visit"
-    lines = [
-        f"Type: {type_label}",
-        f"Date: {appointment.get('date', 'unknown')}",
-        f"Time: {appointment.get('time', 'unknown')}",
-    ]
-    address = appointment.get("address", "")
-    if address:
-        lines.append(f"Address: {address}")
-    return "\n".join(lines)
+APPOINTMENTS = [
+    {
+        "date": "2026-07-27",
+        "time": "10:00 AM",
+        "pin_code": "400067",
+        "address": "807, Golden Lane, Kandivali West, Mumbai",
+        "landmark": "Golden Lane",
+        "contact_number": "9876543210",
+        "center_name": "Apollo Hospital",
+        "center_address": "123, Main St, Anytown, Mumbai",
+    },
+    {
+        "date": "2026-07-28",
+        "time": "11:00 AM",
+        "pin_code": "400067",
+        "address": "807, Golden Lane, Kandivali West, Mumbai",
+        "landmark": "Golden Lane",
+        "contact_number": "9876543210",
+        "center_name": "Apollo Hospital",
+        "center_address": "123, Main St, Anytown, Mumbai",
+    },
+    {
+        "date": "2026-07-29",
+        "time": "12:00 PM",
+        "pin_code": "400067",
+        "address": "807, Golden Lane, Kandivali West, Mumbai",
+        "landmark": "Golden Lane",
+        "contact_number": "9876543210",
+        "center_name": "Apollo Hospital",
+        "center_address": "123, Main St, Anytown, Mumbai",
+    },
+    {
+        "date": "2026-07-30",
+        "time": "13:00 PM",
+        "pin_code": "400067",
+        "address": "807, Golden Lane, Kandivali West, Mumbai",
+        "landmark": "Golden Lane",
+        "contact_number": "9876543210",
+        "center_name": "Apollo Hospital",
+        "center_address": "123, Main St, Anytown, Mumbai",
+    },
+    {
+        "date": "2026-07-31",
+        "time": "14:00 PM",
+        "pin_code": "400067",
+        "address": "807, Golden Lane, Kandivali West, Mumbai",
+        "landmark": "Golden Lane",
+        "contact_number": "9876543210",
+        "center_name": "Apollo Hospital",
+        "center_address": "123, Main St, Anytown, Mumbai",
+    },
+]
 
 
 class ReminderAgent(ScenarioAgent):
-    def __init__(self, name, gender, language, validation_details, appointment) -> None:
+    def __init__(self, name, gender, language, validation_details) -> None:
         self.validation_details = validation_details
-        self.appointment = appointment
+        self.appointment = random.choice(APPOINTMENTS)
         self._dob_attempts: int = 0
-        self._booking_context: dict[str, Any] = {}
         self._current_step: str = "greeting"
 
         customer_name = validation_details.get("full_name", "the customer")
         current_time = datetime.now(INDIA_TZ).strftime("%A, %d %B %Y %H:%M IST")
-        appt_summary = _format_appointment_summary(appointment)
+        company_name = random.choice(INSURANCE_COMPANIES)
 
-        appt_date_str = (appointment or {}).get("date", "")
-        appt_is_past = False
-        if appt_date_str:
-            try:
-                appt_is_past = date.fromisoformat(appt_date_str) < date.today()
-            except ValueError:
-                pass
-        past_note = (
-            "\n⚠️ NOTE: The appointment date has already passed. "
-            "When you reach Step 3, proactively inform the customer and offer to reschedule."
-            if appt_is_past
-            else ""
-        )
+        is_axis_max_life = company_name == "Axis Max-Life Insurance"
+
+        is_home_visit_available = random.choice([True, False])
+
+        if is_home_visit_available:
+            self._booking_context = {
+                "exam_type": "Home Collection",
+                "address": self.appointment.get("address", ""),
+                "pin_code": self.appointment.get("pin_code", ""),
+                "landmark": self.appointment.get("landmark", ""),
+                "contact_number": self.appointment.get("contact_number", ""),
+            }
+        else:
+            self._booking_context = {
+                "exam_type": "Medical Examination",
+                "address": self.appointment.get("center_address", ""),
+                "center_name": self.appointment.get("center_name", ""),
+                "pin_code": "",
+            }
 
         super().__init__(
             language=language,
-            instructions=REMINDER_AGENT_PROMPT.format(
+            instructions=MAX_REMINDER_AGENT_PROMPT.format(
                 name=name,
                 gender=gender,
-                language=language,
+                company_name=company_name,
                 current_time=current_time,
                 customer_name=customer_name,
-                appt_summary=appt_summary,
-                past_note=past_note,
+                is_home_visit_available=is_home_visit_available,
+                appointment_date=self.appointment.get("date", ""),
+                appointment_time=self.appointment.get("time", ""),
+                address=self.appointment.get("address", ""),
+                landmark=self.appointment.get("landmark", ""),
+                contact_number=self.appointment.get("contact_number", ""),
+                center_name=self.appointment.get("center_name", ""),
+                center_address=self.appointment.get("center_address", ""),
+            )
+            if is_axis_max_life
+            else REMINDER_AGENT_PROMPT.format(
+                name=name,
+                gender=gender,
+                company_name=company_name,
+                current_time=current_time,
+                customer_name=customer_name,
+                is_home_visit_available=is_home_visit_available,
+                appointment_date=self.appointment.get("date", ""),
+                appointment_time=self.appointment.get("time", ""),
+                address=self.appointment.get("address", ""),
+                landmark=self.appointment.get("landmark", ""),
+                contact_number=self.appointment.get("contact_number", ""),
+                center_name=self.appointment.get("center_name", ""),
+                center_address=self.appointment.get("center_address", ""),
             ),
         )
-
-    # -----------------------------------------------------------------------
-    # Appointment details
-    # -----------------------------------------------------------------------
-
-    @function_tool()
-    async def get_appointment_details(self, context: RunContext) -> dict[str, Any]:
-        """Retrieve the customer's appointment details on file.
-
-        Call this in Step 3 after identity verification to read out the appointment.
-        Also checks whether the appointment date has already passed.
-        """
-        self._current_step = "appointment_details"
-
-        if not self.appointment:
-            return {
-                "appointment_found": False,
-                "next_step": "escalate",
-            }
-
-        appt_type = self.appointment.get("appointment_type", "")
-        appt_date_str = self.appointment.get("date", "")
-        appt_time = self.appointment.get("time", "")
-        address = self.appointment.get("address", "")
-        pin_code = self.appointment.get("pin_code", "")
-        exam_type = self.appointment.get("exam_type", "")
-
-        appt_is_past = False
-        if appt_date_str:
-            try:
-                appt_is_past = date.fromisoformat(appt_date_str) < date.today()
-            except ValueError:
-                pass
-
-        type_label = "Home Visit" if appt_type == "home" else "Diagnostic Center Visit"
-
-        # Cache existing appointment details for potential reschedule reuse
-        self._booking_context.update(
-            {
-                "appointment_type": appt_type,
-                "address": address,
-                "pin_code": pin_code,
-                "exam_type": exam_type,
-            }
-        )
-
-        return {
-            "appointment_found": True,
-            "appointment_type": type_label,
-            "raw_type": appt_type,
-            "date": appt_date_str,
-            "time": appt_time,
-            "address": address,
-            "pin_code": pin_code,
-            "exam_type": exam_type,
-            "appointment_is_past": appt_is_past,
-            "next_step": "reschedule" if appt_is_past else "confirm_convenience",
-        }
-
-    # -----------------------------------------------------------------------
-    # Home visit address
-    # -----------------------------------------------------------------------
-
-    @function_tool()
-    async def save_home_visit_address(
-        self,
-        context: RunContext,
-        house: str,
-        street: str,
-        area: str,
-        city: str,
-        pin_code: str,
-        landmark: str = "",
-    ) -> dict[str, Any]:
-        """Save a new home address for a rescheduled home visit.
-
-        Call this after the customer has confirmed all address components during reschedule.
-
-        Args:
-            house: House or flat number.
-            street: Street or road name.
-            area: Locality or neighbourhood.
-            city: City name.
-            pin_code: 6-digit Indian postal code.
-            landmark: Optional nearby landmark for the technician.
-        """
-        await asyncio.sleep(2)
-        parts = [house, street, area, city, f"PIN {pin_code}"]
-        if landmark:
-            parts.append(f"Near {landmark}")
-        full_address = ", ".join(p.strip() for p in parts if p.strip())
-
-        self._booking_context.update(
-            {
-                "address": full_address,
-                "pin_code": pin_code,
-                "appointment_type": "home",
-                "exam_type": "Home Collection",
-            }
-        )
-        return {
-            "saved": True,
-            "full_address": full_address,
-            "next_step": "collect_datetime",
-        }
-
-    # -----------------------------------------------------------------------
-    # Center visit tools
-    # -----------------------------------------------------------------------
-
-    @function_tool()
-    async def search_nearby_centers(
-        self, context: RunContext, location: str
-    ) -> dict[str, Any]:
-        """Find nearby diagnostic centers for the customer's preferred area or city.
-
-        Args:
-            location: Area name, locality, or city provided by the customer.
-        """
-        await asyncio.sleep(2)
-        self._current_step = "center_search"
-        key = normalize_lookup_key(location)
-
-        matches = [
-            {"id": cid, **info}
-            for cid, info in DIAGNOSTIC_CENTERS.items()
-            if key in normalize_lookup_key(info["city"])
-            or key in normalize_lookup_key(info["area"])
-        ]
-
-        if not matches:
-            matches = [
-                {"id": cid, **info}
-                for cid, info in DIAGNOSTIC_CENTERS.items()
-                if info["city"] == "Bangalore"
-            ]
-
-        return {"centers": matches[:3], "next_step": "center_select"}
-
-    @function_tool()
-    async def select_center(
-        self, context: RunContext, center_id: str
-    ) -> dict[str, Any]:
-        """Confirm the customer's chosen diagnostic center for the rescheduled visit.
-
-        Args:
-            center_id: The center identifier (e.g. C001).
-        """
-        await asyncio.sleep(2)
-        self._current_step = "center_select"
-        center = DIAGNOSTIC_CENTERS.get(center_id.upper())
-        if center is None:
-            center_id = "C001"
-            center = DIAGNOSTIC_CENTERS[center_id]
-
-        self._booking_context.update(
-            {
-                "appointment_type": "center",
-                "exam_type": "Medical Examination",
-                "center_id": center_id,
-                "center_name": center["name"],
-                "address": center["address"],
-            }
-        )
-        return {"selected": True, "center": center, "next_step": "collect_datetime"}
 
     # -----------------------------------------------------------------------
     # Reschedule
@@ -252,7 +147,7 @@ class ReminderAgent(ScenarioAgent):
     @function_tool()
     async def reschedule_appointment_booking(
         self,
-        context: RunContext,
+        _context: RunContext,
         new_date: str,
         new_time: str,
         exam_type: str = "",
@@ -279,12 +174,8 @@ class ReminderAgent(ScenarioAgent):
         final_exam_type = exam_type or self._booking_context.get("exam_type", "")
         final_pin_code = pin_code or self._booking_context.get("pin_code", "")
         final_address = address or self._booking_context.get("address", "")
-
-        phone = _normalize_phone(self.validation_details.get("phone_number", ""))
-        dob = _normalize_dob(
-            self.validation_details.get("dob", "")
-        ) or self.validation_details.get("dob", "")
-
+        phone = self.validation_details.get("phone_number", "")
+        dob = self.validation_details.get("dob", "")
         try:
             record = await asyncio.to_thread(
                 db_reschedule_appointment,
@@ -324,7 +215,7 @@ class ReminderAgent(ScenarioAgent):
 
     @function_tool()
     async def schedule_callback(
-        self, context: RunContext, preferred_time: str = ""
+        self, _context: RunContext, preferred_time: str = ""
     ) -> dict[str, Any]:
         """Schedule a callback for the customer at a preferred time.
 
@@ -339,49 +230,4 @@ class ReminderAgent(ScenarioAgent):
             "scheduled": True,
             "callback_time": callback_time,
             "next_step": "close",
-        }
-
-    @function_tool()
-    async def mark_wrong_number(self, context: RunContext) -> dict[str, Any]:
-        """Mark this contact as a wrong number and update the record.
-
-        Call immediately when the answering party confirms they are not the intended customer.
-        """
-        await asyncio.sleep(2)
-        return {"updated": True, "status": "wrong_number", "next_step": "close"}
-
-    @function_tool()
-    async def mark_exam_completed(self, context: RunContext) -> dict[str, Any]:
-        """Mark the medical examination as already completed by the customer.
-
-        Call when the customer reports they have already done the exam.
-        """
-        await asyncio.sleep(2)
-        return {"updated": True, "status": "exam_completed", "next_step": "close"}
-
-    @function_tool()
-    async def get_call_status(self, context: RunContext) -> dict[str, Any]:
-        """Return the current step and all data collected so far in this call.
-
-        Call this whenever you are unsure which step you are on, what information
-        has already been gathered, or what to do next.
-        """
-        await asyncio.sleep(2)
-        step_next_map: dict[str, str] = {
-            "greeting": "introduction",
-            "introduction": "appointment_details",
-            "appointment_details": "preparation_reminder",
-            "preparation_reminder": "confirm_convenience",
-            "confirm_convenience": "close or reschedule",
-            "center_search": "center_select",
-            "center_select": "collect_datetime",
-            "reschedule_booking": "close",
-            "close": "done",
-        }
-
-        return {
-            "current_step": self._current_step,
-            "next_step": step_next_map.get(self._current_step, "unknown"),
-            "dob_attempts_used": self._dob_attempts,
-            "collected": {k: v for k, v in self._booking_context.items()},
         }

@@ -39,11 +39,13 @@ def get_agent(metadata: str | None) -> Agent:
     from agents.medical_examinar import MedicalExaminationAgent
     from agents.medical_appointment import MedicalAppointmentAgent
     from .general_purpose import GeneralPurposeAgent
+    from .insurance_feedback import InsuranceFeedbackAgent
 
     AGENT_FACTORIES: dict[str, type[Agent]] = {
         "medical-examination": MedicalExaminationAgent,
         "reminder-call": MedicalAppointmentAgent,
         "medical-appointment": MedicalAppointmentAgent,
+        "insurance-feedback": InsuranceFeedbackAgent,
     }
 
     slug = extract_scenario_slug(metadata)
