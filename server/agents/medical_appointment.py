@@ -338,7 +338,7 @@ class MedicalAppointmentAgent(ScenarioAgent):
         is_home_visit_available = random.choice([True, False])
         is_axis_max_life = company_name == "Axis Max-Life Insurance"
         address = random.choice(ADDRESSES)
-        center = random.choice(DIAGNOSTIC_CENTERS.values())
+        center = random.choice(list(DIAGNOSTIC_CENTERS.values()))
         self._booking_context = {
             "pin_code": address["pin_code"],
             "address": address["address"],
