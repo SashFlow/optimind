@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Any
 from zoneinfo import ZoneInfo
 import asyncio
+import random
 
 from agents.base import ScenarioAgent
 from agents.lib import INSURANCE_FEEDBACK_AGENT_PROMPT
@@ -30,6 +31,7 @@ class InsuranceFeedbackAgent(ScenarioAgent):
                 company_name=company_name,
                 current_time=current_time,
                 customer_name=customer_name,
+                is_home_visit=random.choice(["YES", "NO"]),
             ),
         )
 
