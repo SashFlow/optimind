@@ -18,10 +18,8 @@ CALL_STEPS = (
     "greeting",
     "language",
     "availability",
-    "disclosure",
     "feedback",
     "closing",
-    "close",
 )
 
 SALUTATION_PREFIXES = ("Mr.", "Mrs.", "Ms.", "Mx.", "Dr.")
@@ -82,11 +80,14 @@ class InsuranceFeedbackAgent(ScenarioAgent):
         guidance = {
             "greeting": "Complete right-party check, then call advance_call_step(step='language').",
             "language": "Confirm language choice, then call advance_call_step(step='availability').",
-            "availability": "Confirm availability, then call advance_call_step(step='disclosure').",
-            "disclosure": "Deliver recording notice and call purpose, then call advance_call_step(step='feedback').",
-            "feedback": "Ask Step 4 questions one at a time; call submit_feedback after each answer.",
-            "closing": "Deliver Step 5 closing lines, then say goodbye and call end_call exactly once.",
-            "close": "Call end_call exactly once. Do not speak after end_call.",
+            "availability": "Confirm availability, then call advance_call_step(step='feedback').",
+            "feedback": (
+                "Deliver recording notice and call purpose, then ask Step 3 feedback questions "
+                "one at a time; call submit_feedback after each answer."
+            ),
+            "closing": (
+                "Deliver all Step 4 closing lines, then call end_call exactly once in the same turn."
+            ),
         }
         return guidance.get(self._current_step, "Continue the scripted call flow.")
 
@@ -96,8 +97,8 @@ class InsuranceFeedbackAgent(ScenarioAgent):
     ) -> dict[str, Any]:
         """Move to the next script step after the current step is fully resolved.
 
-        Use when completing Steps 0 through 3, when entering closing, or before end_call.
-        Valid steps: greeting, language, availability, disclosure, feedback, closing, close.
+        Use when completing Steps 0 through 2, when entering feedback, when entering closing, or before end_call.
+        Valid steps: greeting, language, availability, feedback, closing.
 
         Args:
             step: The step you are advancing to.
@@ -128,7 +129,7 @@ class InsuranceFeedbackAgent(ScenarioAgent):
     ) -> dict[str, Any]:
         """Record a feedback answer or customer complaint for this call.
 
-        Call after each Step 4 question is answered and whenever the customer raises a complaint.
+        Call after each Step 3 feedback question is answered and whenever the customer raises a complaint.
 
         Args:
             question_key: Identifier such as q1, q2, q3, q4, q5, q6, rating, or complaint_topic.
@@ -159,7 +160,7 @@ class InsuranceFeedbackAgent(ScenarioAgent):
             "next_action": (
                 "Deliver the Complaint Response before the next question."
                 if is_complaint
-                else "Acknowledge briefly, then ask the next Step 4 question."
+                else "Acknowledge briefly, then ask the next Step 3 feedback question."
             ),
         }
 
@@ -196,7 +197,7 @@ class InsuranceFeedbackAgent(ScenarioAgent):
         """
         await asyncio.sleep(2)
         callback_time = preferred_time.strip() if preferred_time else "within 2 hours"
-        self._current_step = "close"
+        self._current_step = "closing"
         return {
             "scheduled": True,
             "callback_time": callback_time,
