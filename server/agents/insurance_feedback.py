@@ -32,6 +32,7 @@ class InsuranceFeedbackAgent(ScenarioAgent):
                 current_time=current_time,
                 customer_name=customer_name,
                 is_home_visit=random.choice(["YES", "NO"]),
+                customer_salutation=name.split(" ")[0],
             ),
         )
 
