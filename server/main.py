@@ -66,7 +66,7 @@ def load_gcp_credentials_json():
     return None
 
 
-@server.rtc_session(agent_name="demo-agent-4")
+@server.rtc_session(agent_name="demo-agent")
 async def entrypoint(ctx: JobContext):
     # Connect to Room
     ctx.log_context_fields = {
