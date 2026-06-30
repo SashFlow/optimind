@@ -88,7 +88,7 @@ class ReminderAgent(ScenarioAgent):
         is_axis_max_life = company_name == "Axis Max-Life Insurance"
 
         is_home_visit_available = random.choice([True, False])
-
+        self._end_call_invoked = False
         if is_home_visit_available:
             self._booking_context = {
                 "exam_type": "Home Collection",
@@ -231,3 +231,23 @@ class ReminderAgent(ScenarioAgent):
             "callback_time": callback_time,
             "next_step": "close",
         }
+
+    @function_tool()
+    async def end_call(self, context: RunContext) -> str:
+        """End the call after your final goodbye has been spoken.
+
+        Call exactly once at the end of the conversation. Speak your goodbye first in the
+        same turn, then invoke this tool. After this tool returns, produce no further
+        speech or tool calls.
+        """
+        if self._end_call_invoked or getattr(
+            context.session, "_end_call_invoked", False
+        ):
+            logger.debug("end_call ignored — already invoked")
+            return "TERMINAL: Call already ended. Produce no further output."
+
+        self._end_call_invoked = True
+        context.session._end_call_invoked = True
+        logger.info("Reminder call ending")
+        context.session.shutdown()
+        return "TERMINAL: Call ended. Produce no further output."

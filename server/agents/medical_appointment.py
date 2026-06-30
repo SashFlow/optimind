@@ -345,6 +345,7 @@ class MedicalAppointmentAgent(ScenarioAgent):
             "center_name": center["name"],
             "center_address": center["address"],
         }
+        self._end_call_invoked = False
 
         super().__init__(
             language=language,
@@ -515,3 +516,23 @@ class MedicalAppointmentAgent(ScenarioAgent):
             "callback_time": callback_time,
             "next_step": "close",
         }
+
+    @function_tool()
+    async def end_call(self, context: RunContext) -> str:
+        """End the call after your final goodbye has been spoken.
+
+        Call exactly once at the end of the conversation. Speak your goodbye first in the
+        same turn, then invoke this tool. After this tool returns, produce no further
+        speech or tool calls.
+        """
+        if self._end_call_invoked or getattr(
+            context.session, "_end_call_invoked", False
+        ):
+            logger.debug("end_call ignored — already invoked")
+            return "TERMINAL: Call already ended. Produce no further output."
+
+        self._end_call_invoked = True
+        context.session._end_call_invoked = True
+        logger.info("Medical appointment call ending")
+        context.session.shutdown()
+        return "TERMINAL: Call ended. Produce no further output."
