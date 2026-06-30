@@ -22,7 +22,7 @@ from livekit.protocol.egress import (
 from livekit.plugins import anam, google, ai_coustics
 from livekit.agents.voice import AgentSession, UserStateChangedEvent
 from agents.common import resolve_metadata_payload
-from agents.tools import end_call, transfer_to_human
+from agents.tools import end_call, transfer_to_human, end_call_tool
 from utils.helper import get_agent
 from google.genai.types import FunctionResponseScheduling
 import utils.patch as patch  # noqa: F401
@@ -66,7 +66,7 @@ def load_gcp_credentials_json():
     return None
 
 
-@server.rtc_session(agent_name="demo-agent")
+@server.rtc_session(agent_name="demo-agent-4")
 async def entrypoint(ctx: JobContext):
     # Connect to Room
     ctx.log_context_fields = {
@@ -103,7 +103,7 @@ async def entrypoint(ctx: JobContext):
             language=LANGUAGE_DICT.get(language, "en"),
             tool_response_scheduling=FunctionResponseScheduling.WHEN_IDLE,
         ),
-        tools=[end_call, transfer_to_human],
+        tools=[end_call_tool, transfer_to_human],
         vad=ai_coustics.VAD(),
         preemptive_generation=True,
         user_away_timeout=30,

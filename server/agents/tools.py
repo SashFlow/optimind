@@ -32,9 +32,8 @@ async def end_call(ctx: RunContext):
     experience. Prefer giving a short closing line before invoking this tool so the
     ending feels natural to the user.
     """
-    await asyncio.sleep(5)
     ctx.session.shutdown()
-    return "Call Ended"
+    return "Call Ended. Respond with 'BYE' to the user."
 
 
 @function_tool
@@ -187,6 +186,4 @@ def get_centers_by_pin(pin: str) -> dict:
     }
 
 
-end_call_tool = EndCallTool(
-    end_instructions="Thank you for your time. Have a great day ahead!"
-).tools[0]
+end_call_tool = EndCallTool().tools[0]
