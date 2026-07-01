@@ -145,14 +145,13 @@ issue cannot be resolved on the call.
    - If below 9 (optional, ask once): "May I know the reason for your rating? Your feedback helps us improve."
 
 **Home-visit path** (IS_HOME_VISIT = Yes):
-1. Was your medical examination completed at your home?
-2. Did the medical team arrive at your location on time?
-3. Did the technician maintain proper hygiene and cleanliness while collecting your samples?
-4. Did you face any issues during the medical examination?
-5. If the M.E.R was also done at home: did the technician complete the M.E.R form in your presence — including
+1. Did the medical team arrive at your location on time?
+2. Did the technician maintain proper hygiene and cleanliness while collecting your samples?
+3. Did you face any issues during the medical examination?
+4. If the M.E.R was also done at home: did the technician complete the M.E.R form in your presence — including
    BP, height, weight, and your signature?
-6. Please share your overall experience with the medical services.
-7. On a scale of 1 to 10, where 10 is the highest, how would you rate our service?
+5. Please share your overall experience with the medical services.
+6. On a scale of 1 to 10, where 10 is the highest, how would you rate our service?
    - Rating rules: only ask the low-rating follow-up if the customer gives an explicit number from 1 to 8.
      Ratings of 9 or 10 (including "nine", "नाइन", "नौ") never trigger the follow-up.
    - If the answer is ambiguous with no clear number, ask once: "On a scale of 1 to 10, what number would
@@ -181,13 +180,12 @@ Note: [Honorific] in the optional low-rating follow-up should be resolved per Ad
    - (अगर 9 से कम) [Honorific], क्या आप बता सकते हैं कि आपने यह रेटिंग क्यों दी? आपका फीडबैक हमें अपनी सर्विस इम्प्रूव करने में मदद करेगा।
 
 **HINDI — Home-Visit Path**
-1. क्या आपका मेडिकल घर पर पूरा हो गया?
-2. क्या मेडिकल टीम टाइम पर आपके घर पहुँची थी?
-3. क्या टेक्नीशियन ने सैंपल लेते समय साफ़-सफाई और हाइजीन प्रॉपर तरीके से रखी?
-4. मेडिकल के दौरान क्या आपको कोई इश्यू हुआ?
-5. अगर M.E.R भी घर पर हुआ था, तो क्या टेक्नीशियन ने आपके सामने M.E.R फॉर्म पूरा भरा, जिसमें BP चेक करना, आपकी हाइट, वेट और आपके सिग्नेचर लेना शामिल था?
-6. मेडिकल सर्विस को लेकर आपका ओवरऑल एक्सपीरियंस कैसा रहा?
-7. अपने ओवरऑल एक्सपीरियंस के हिसाब से, 1 से 10 के स्केल पर, जहाँ 10 सबसे बेस्ट रेटिंग है, आप हमारी सर्विस को कितनी रेटिंग देंगे?
+1. क्या मेडिकल टीम टाइम पर आपके घर पहुँची थी?
+2. क्या टेक्नीशियन ने सैंपल लेते समय साफ़-सफाई और हाइजीन प्रॉपर तरीके से रखी?
+3. मेडिकल के दौरान क्या आपको कोई इश्यू हुआ?
+4. अगर M.E.R भी घर पर हुआ था, तो क्या टेक्नीशियन ने आपके सामने M.E.R फॉर्म पूरा भरा, जिसमें BP चेक करना, आपकी हाइट, वेट और आपके सिग्नेचर लेना शामिल था?
+5. मेडिकल सर्विस को लेकर आपका ओवरऑल एक्सपीरियंस कैसा रहा?
+6. अपने ओवरऑल एक्सपीरियंस के हिसाब से, 1 से 10 के स्केल पर, जहाँ 10 सबसे बेस्ट रेटिंग है, आप हमारी सर्विस को कितनी रेटिंग देंगे?
    - (अगर 9 से कम) [Honorific], क्या आप बता सकते हैं कि आपने यह रेटिंग क्यों दी? आपका फीडबैक हमें अपनी सर्विस इम्प्रूव करने में मदद करेगा।
 
 **MARATHI — Center-Visit Path**
@@ -201,13 +199,12 @@ Note: [Honorific] in the optional low-rating follow-up should be resolved per Ad
    - (जर 9 पेक्षा कमी) [Honorific], सांगू शकाल का तुम्ही ही रेटिंग का दिली? तुमचा फीडबॅक आम्हाला आमची सर्विस इम्प्रूव करण्यास मदत करेल.
 
 **MARATHI — Home-Visit Path**
-1. तुमचं मेडिकल घरी पूर्ण झालं का?
-2. मेडिकल टीम टाइमवर तुमच्या घरी आली होती का?
-3. टेक्निशियनने सॅम्पल घेताना स्वच्छता आणि हायजीनची प्रॉपर काळजी घेतली होती का?
-4. मेडिकल करताना तुम्हाला काही इश्यू आला का?
-5. जर M.E.R घरीच झाला असेल, तर टेक्निशियनने तुमच्या समोर M.E.R फॉर्म पूर्ण भरला का? त्यामध्ये BP चेक करणे, हाइट, वेट आणि तुमची सही घेणे यांचा समावेश होता का?
-6. मेडिकल सर्विसबद्दल तुमचा ओव्हरऑल एक्सपिरियन्स कसा होता?
-7. तुमच्या ओव्हरऑल एक्सपिरियन्सच्या हिशोबाने, 1 ते 10 च्या स्केलवर, जिथे 10 ही बेस्ट रेटिंग आहे, तुम्ही आमच्या सर्विसला किती रेटिंग द्याल?
+1. मेडिकल टीम टाइमवर तुमच्या घरी आली होती का?
+2. टेक्निशियनने सॅम्पल घेताना स्वच्छता आणि हायजीनची प्रॉपर काळजी घेतली होती का?
+3. मेडिकल करताना तुम्हाला काही इश्यू आला का?
+4. जर M.E.R घरीच झाला असेल, तर टेक्निशियनने तुमच्या समोर M.E.R फॉर्म पूर्ण भरला का? त्यामध्ये BP चेक करणे, हाइट, वेट आणि तुमची सही घेणे यांचा समावेश होता का?
+5. मेडिकल सर्विसबद्दल तुमचा ओव्हरऑल एक्सपिरियन्स कसा होता?
+6. तुमच्या ओव्हरऑल एक्सपिरियन्सच्या हिशोबाने, 1 ते 10 च्या स्केलवर, जिथे 10 ही बेस्ट रेटिंग आहे, तुम्ही आमच्या सर्विसला किती रेटिंग द्याल?
    - (जर 9 पेक्षा कमी) [Honorific], सांगू शकाल का तुम्ही ही रेटिंग का दिली? तुमचा फीडबॅक आम्हाला आमची सर्विस इम्प्रूव करण्यास मदत करेल.
 
 ---
