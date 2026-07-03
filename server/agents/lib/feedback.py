@@ -178,44 +178,54 @@ issue cannot be resolved on the call.
 ---
 #### Response 1 – Apology
 ENGLISH:
-"I'm sorry to hear that. We truly regret the inconvenience.""
+"I'm sorry to hear that. We sincerely regret the inconvenience caused. We'll make sure this is shared with our team."
 
 HINDI:
-"आपको हुई असुविधा के लिए हमें खेद है। आपका फीडबैक हम हमारी टीम तक ज़रूर पहुँचाएंगे।"
+"आपको हुई असुविधा के लिए हमें खेद है। हम आपकी बात अपनी टीम तक ज़रूर पहुँचाएंगे।"
 
 MARATHI:
-"आपल्याला झालेल्या अडचणीबद्दल दिलगीर आहोत. तुमचा फीडबॅक आम्ही योग्य टीमपर्यंत नक्की पोहोचवू."
+"आपल्याला झालेल्या असुविधेबद्दल दिलगीर आहोत. आम्ही तुमची माहिती आमच्या टीमपर्यंत नक्की पोहोचवू."
 ---
+
 #### Response 2 – Feedback Noted
 ENGLISH:
-"Thank you for sharing your feedback. We've noted it."
+"Thank you for sharing your feedback. We've noted it and appreciate you letting us know."
 
 HINDI:
-"फीडबैक शेयर करने के लिए धन्यवाद। हमने इसे दर्ज कर लिया है।"
+"फीडबैक शेयर करने के लिए धन्यवाद। हमने आपकी बात नोट कर ली है।"
 
 MARATHI:
-"फफीडबॅक दिल्याबद्दल धन्यवाद. आम्ही तुमचा फीडबॅक लक्षात घेतला आहे."
+"फीडबॅक दिल्याबद्दल धन्यवाद. आम्ही तुमचा फीडबॅक लक्षात घेतला आहे."
 ---
-#### Response 3 – Will Share with Team
+#### Response 3 – Appreciation
 ENGLISH:
-"We'll make sure your feedback reaches our concerned team."
+"Thank you for bringing this to our attention. We appreciate your feedback."
 
 HINDI:
-"आपका फीडबैक हम हमारी टीम तक ज़रूर पहुँचाएंगे।"
+"यह बात हमारे साथ शेयर करने के लिए धन्यवाद। हम आपके फीडबैक की सराहना करते हैं।"
 
 MARATHI:
-"तुमचा फीडबॅक आम्ही योग्य टीमपर्यंत नक्की पोहोचवू."
+"ही गोष्ट आमच्यापर्यंत पोहोचवल्याबद्दल धन्यवाद. तुमच्या फीडबॅकची आम्ही कदर करतो."
 ---
 #### Response 4 – Improvement
-
 ENGLISH:
-"Thank you for your feedback. Your feedback will help us improve our service. Thank you."
+"Thank you for your honest feedback. It will help us improve our service."
 
 HINDI:
-"आपका फीडबैक हमारी सर्विस और बेहतर बनाने में मदद करेगा। धन्यवाद।"
+"आपके फीडबैक के लिए धन्यवाद। इससे हमें हमारी सर्विस और बेहतर बनाने में मदद मिलेगी।"
 
-**MARATHI:
-"तुमच्या फीडबॅकमुळे आम्हाला आमची सर्व्हिस अजून चांगली करता येईल. धन्यवाद."
+MARATHI:
+"तुमच्या फीडबॅकबद्दल धन्यवाद. त्यामुळे आम्हाला आमची सर्व्हिस सुधारता येईल."
+---
+#### Response 5 – Assurance
+ENGLISH:
+"Thank you for your patience. We'll take this up with our team and look into it."
+
+HINDI:
+"आपके धैर्य के लिए धन्यवाद। हम इस बात को अपनी टीम के साथ ज़रूर शेयर करेंगे।"
+
+MARATHI:
+"तुमच्या संयमाबद्दल धन्यवाद. आम्ही ही माहिती आमच्या टीमसोबत नक्की शेअर करू."
 ---
 ## LANGUAGE REFERENCE
 Each line below is the spoken equivalent of the matching numbered question in Step 3 for that path. This
