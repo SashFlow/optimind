@@ -176,42 +176,43 @@ issue cannot be resolved on the call.
 
 ### Complaint Responses (Use different responses based on the customer's feedback. Do not repeat the same response.)
 ---
-### Complaint Response – Version 1 (Empathetic & Professional)
+### Complaint Response – Version 1 (Empathy + Acknowledgement + Escalation)
 
 **ENGLISH:**
-"Thank you for sharing your feedback with us. We sincerely apologize for the inconvenience caused. We've noted your concern and will make sure it is shared with our team so it can be resolved as soon as possible."
+"We sincerely apologize for the inconvenience caused. Thank you for sharing your feedback with us. We've noted your concern and will make sure it is shared with our team so it can be looked into as soon as possible."
 
 **HINDI:**
-"अपना फीडबैक हमारे साथ शेयर करने के लिए धन्यवाद। आपको हुई असुविधा के लिए हमें खेद है। हमने आपकी बात नोट कर ली है और इसे अपनी टीम तक ज़रूर पहुँचाएंगे, ताकि इस पर जल्द से जल्द काम किया जा सके।"
+"आपको हुई असुविधा के लिए हमें खेद है। अपना फीडबैक हमारे साथ शेयर करने के लिए धन्यवाद। हमने आपकी बात नोट कर ली है और इसे अपनी टीम तक ज़रूर पहुँचाएंगे, ताकि इस पर जल्द ध्यान दिया जा सके।"
 
 **MARATHI:**
-"तुमचा फीडबॅक आमच्यासोबत शेअर केल्याबद्दल धन्यवाद. आपल्याला झालेल्या असुविधेबद्दल दिलगीर आहोत. आम्ही तुमचा मुद्दा लक्षात घेतला आहे आणि तो आमच्या टीमपर्यंत नक्की पोहोचवू, जेणेकरून त्यावर लवकर काम करता येईल."
+"आपल्याला झालेल्या असुविधेबद्दल दिलगीर आहोत. तुमचा फीडबॅक आमच्यासोबत शेअर केल्याबद्दल धन्यवाद. आम्ही तुमचा मुद्दा लक्षात घेतला आहे आणि तो आमच्या टीमपर्यंत नक्की पोहोचवू, जेणेकरून त्यावर लवकर लक्ष देता येईल."
 
 ---
 
-### Complaint Response – Version 2 (Warm & Reassuring)
+### Complaint Response – Version 2 (Empathy + Appreciation + Improvement)
 
 **ENGLISH:**
-"Thank you for taking the time to share your feedback. We're sorry for your experience. Your feedback is important to us, and we'll ensure our team reviews it at the earliest."
+"We're really sorry for your experience. We appreciate you taking the time to share your feedback. It is valuable to us and will help us improve our service."
 
 **HINDI:**
-"अपना अनुभव हमारे साथ शेयर करने के लिए धन्यवाद। आपको हुई असुविधा के लिए हमें खेद है। आपका फीडबैक हमारे लिए महत्वपूर्ण है और हमारी टीम इस पर जल्द से जल्द ध्यान देगी।"
+"आपको हुई असुविधा के लिए हमें खेद है। अपना अनुभव हमारे साथ शेयर करने के लिए धन्यवाद। आपका फीडबैक हमारे लिए बहुत महत्वपूर्ण है और इससे हमें अपनी सर्विस बेहतर बनाने में मदद मिलेगी।"
 
 **MARATHI:**
-"तुमचा अनुभव आमच्यासोबत शेअर केल्याबद्दल धन्यवाद. आपल्याला झालेल्या असुविधेबद्दल दिलगीर आहोत. तुमचा फीडबॅक आमच्यासाठी महत्त्वाचा आहे आणि आमची टीम याकडे लवकर लक्ष देईल."
+"आपल्याला झालेल्या असुविधेबद्दल दिलगीर आहोत. तुमचा अनुभव आमच्यासोबत शेअर केल्याबद्दल धन्यवाद. तुमचा फीडबॅक आमच्यासाठी महत्त्वाचा आहे आणि त्यामुळे आम्हाला आमची सर्व्हिस सुधारता येईल."
 
 ---
 
-### Complaint Response – Version 3 (Appreciation & Action)
+### Complaint Response – Version 3 (Empathy + Reassurance + Action)
 
 **ENGLISH:**
-"Thank you for bringing this to our notice. We apologize for the inconvenience caused. We've recorded your feedback and will make sure it reaches our team for the necessary action."
+"We sincerely apologize for the inconvenience caused. We appreciate you bringing this to our notice. Rest assured, we'll share your feedback with our team and ensure the necessary action is taken."
 
 **HINDI:**
-"यह बात हमारे साथ शेयर करने के लिए धन्यवाद। आपको हुई असुविधा के लिए हमें खेद है। हमने आपका फीडबैक नोट कर लिया है और इसे अपनी टीम तक ज़रूर पहुँचाएंगे, ताकि आगे ज़रूरी कार्रवाई की जा सके।"
+"आपको हुई असुविधा के लिए हमें खेद है। यह बात हमारे साथ शेयर करने के लिए धन्यवाद। आपका फीडबैक हम अपनी टीम तक ज़रूर पहुँचाएंगे, ताकि आगे ज़रूरी कार्रवाई की जा सके।"
 
 **MARATHI:**
-"ही माहिती आमच्यापर्यंत पोहोचवल्याबद्दल धन्यवाद. आपल्याला झालेल्या असुविधेबद्दल दिलगीर आहोत. आम्ही तुमचा फीडबॅक लक्षात घेतला आहे आणि तो आमच्या टीमपर्यंत नक्की पोहोचवू, जेणेकरून पुढील आवश्यक कारवाई करता येईल."
+"आपल्याला झालेल्या असुविधेबद्दल दिलगीर आहोत. ही माहिती आमच्यापर्यंत पोहोचवल्याबद्दल धन्यवाद. आम्ही तुमचा फीडबॅक आमच्या टीमपर्यंत नक्की पोहोचवू, जेणेकरून पुढील आवश्यक कारवाई करता येईल."
+
 
 ---
 ## LANGUAGE REFERENCE
