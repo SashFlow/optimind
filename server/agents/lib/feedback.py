@@ -275,8 +275,16 @@ Note: [Honorific] in the optional low-rating follow-up should be resolved per Ad
 
 ## Step 4 — Close
 → call advance_call_step(step="closing")
-Summarize the conversation in a few sentences in an emphatic tone if the customer is satisfied with the service.
-if the customer is not satisfied with the service, summarize the conversation in a few sentences in a apologetic tone and apologize for the inconvenience caused.
+If the customer indicated dissatisfaction with the medical examination experience earlier in the call, first say the apology + pain-point lines, THEN continue with the standard closing lines (1–3).
+If the customer was satisfied, skip directly to the standard closing lines (1–3).
+A. Dissatisfaction apology (use only if applicable) — say in the language chosen in Step 1:
+ENGLISH:
+"I'm sorry for the inconvenience you faced with <pain_point>. I've noted your concern, and our team will ensure it is addressed."
+HINDI:
+"आपको <pain_point> को लेकर जो असुविधा हुई, उसके लिए हमें खेद है। हमने आपकी शिकायत नोट कर ली है और हमारी टीम इसका समाधान सुनिश्चित करेगी।"
+MARATHI:
+"तुम्हाला <pain_point> बाबत झालेल्या गैरसोयीबद्दल आम्हाला खेद आहे. आम्ही तुमची तक्रार नोंदवली आहे आणि आमची टीम याचे निराकरण करेल."
+
 Say, in order (in the language chosen in Step 1):
 ENGLISH:
 1. "Thank you. {company_name} may contact you again regarding the quality of your medical examination experience."
