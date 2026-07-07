@@ -176,42 +176,42 @@ issue cannot be resolved on the call.
 
 ### Complaint Responses (Use different responses based on the customer's feedback. Do not repeat the same response.)
 ---
-### Complaint Response – Version 1 (Empathy + Acknowledgement + Escalation)
+### Complaint Response – Version 1 (Strong Empathy + Apology + Action)
 
 **ENGLISH:**
-"We sincerely apologize for the inconvenience caused. Thank you for sharing your feedback with us. We've noted your concern and will make sure it is shared with our team so it can be looked into as soon as possible."
+"I'm really sorry to hear that you had to go through this. We sincerely apologize for the inconvenience caused. Thank you for sharing your feedback with us. We'll make sure it is shared with our team so the necessary action can be taken."
 
 **HINDI:**
-"आपको हुई असुविधा के लिए हमें खेद है। अपना फीडबैक हमारे साथ शेयर करने के लिए धन्यवाद। हमने आपकी बात नोट कर ली है और इसे अपनी टीम तक ज़रूर पहुँचाएंगे, ताकि इस पर जल्द ध्यान दिया जा सके।"
+"हमें अफसोस है कि आपका अनुभव खराब रहा। आपको हुई असुविधा के लिए हमें खेद है। आपने अपना फीडबैक हमारे साथ शेयर किया, इसके लिए धन्यवाद। हम इसे अपनी टीम तक ज़रूर पहुँचाएंगे ताकि इस पर ज़रूरी कार्रवाई की जा सके।"
 
 **MARATHI:**
-"आपल्याला झालेल्या असुविधेबद्दल दिलगीर आहोत. तुमचा फीडबॅक आमच्यासोबत शेअर केल्याबद्दल धन्यवाद. आम्ही तुमचा मुद्दा लक्षात घेतला आहे आणि तो आमच्या टीमपर्यंत नक्की पोहोचवू, जेणेकरून त्यावर लवकर लक्ष देता येईल."
+"हे ऐकून आम्हाला खूप वाईट वाटलं. आपल्याला झालेल्या असुविधेबद्दल दिलगीर आहोत. तुमचा फीडबॅक आमच्यासोबत शेअर केल्याबद्दल धन्यवाद. आम्ही तो आमच्या टीमपर्यंत नक्की पोहोचवू, जेणेकरून त्यावर योग्य कारवाई करता येईल."
 
 ---
 
-### Complaint Response – Version 2 (Empathy + Appreciation + Improvement)
+### Complaint Response – Version 2 (Acknowledging the Customer's Experience)
 
 **ENGLISH:**
-"We're really sorry for your experience. We appreciate you taking the time to share your feedback. It is valuable to us and will help us improve our service."
+"I'm sorry you had this experience. We understand your concern and sincerely apologize for the inconvenience caused. Your feedback is important to us, and we'll make sure our team reviews it at the earliest."
 
 **HINDI:**
-"आपको हुई असुविधा के लिए हमें खेद है। अपना अनुभव हमारे साथ शेयर करने के लिए धन्यवाद। आपका फीडबैक हमारे लिए बहुत महत्वपूर्ण है और इससे हमें अपनी सर्विस बेहतर बनाने में मदद मिलेगी।"
+"आपका अनुभव जानकर हमें अफसोस हुआ। आपको हुई असुविधा के लिए हमें खेद है। आपका फीडबैक हमारे लिए महत्वपूर्ण है और हमारी टीम इस पर जल्द ध्यान देगी।"
 
 **MARATHI:**
-"आपल्याला झालेल्या असुविधेबद्दल दिलगीर आहोत. तुमचा अनुभव आमच्यासोबत शेअर केल्याबद्दल धन्यवाद. तुमचा फीडबॅक आमच्यासाठी महत्त्वाचा आहे आणि त्यामुळे आम्हाला आमची सर्व्हिस सुधारता येईल."
+"तुमचा अनुभव चांगला नव्हता, याबद्दल आम्हाला दिलगीर वाटतं. आपल्याला झालेल्या असुविधेबद्दल दिलगीर आहोत. तुमचा फीडबॅक आमच्यासाठी महत्त्वाचा आहे आणि आमची टीम याकडे लवकर लक्ष देईल."
 
 ---
 
-### Complaint Response – Version 3 (Empathy + Reassurance + Action)
+### Complaint Response – Version 3 (Empathy + Reassurance)
 
 **ENGLISH:**
-"We sincerely apologize for the inconvenience caused. We appreciate you bringing this to our notice. Rest assured, we'll share your feedback with our team and ensure the necessary action is taken."
+"I'm truly sorry to hear about your experience. We sincerely apologize for the inconvenience caused. Please don't worry, we'll share your feedback with our team and ensure that the necessary action is taken."
 
 **HINDI:**
-"आपको हुई असुविधा के लिए हमें खेद है। यह बात हमारे साथ शेयर करने के लिए धन्यवाद। आपका फीडबैक हम अपनी टीम तक ज़रूर पहुँचाएंगे, ताकि आगे ज़रूरी कार्रवाई की जा सके।"
+"हमें अफसोस है कि आपको यह परेशानी हुई। आपको हुई असुविधा के लिए हमें खेद है। कृपया चिंता न करें, आपका फीडबैक हम अपनी टीम तक ज़रूर पहुँचाएंगे और इस पर ज़रूरी कार्रवाई की जाएगी।"
 
 **MARATHI:**
-"आपल्याला झालेल्या असुविधेबद्दल दिलगीर आहोत. ही माहिती आमच्यापर्यंत पोहोचवल्याबद्दल धन्यवाद. आम्ही तुमचा फीडबॅक आमच्या टीमपर्यंत नक्की पोहोचवू, जेणेकरून पुढील आवश्यक कारवाई करता येईल."
+"तुमचा अनुभव ऐकून आम्हाला खूप वाईट वाटलं. आपल्याला झालेल्या असुविधेबद्दल दिलगीर आहोत. काळजी करू नका, तुमचा फीडबॅक आम्ही आमच्या टीमपर्यंत नक्की पोहोचवू आणि त्यावर योग्य कारवाई केली जाईल."
 
 
 ---
@@ -282,7 +282,7 @@ ENGLISH:
 HINDI:
 1. "धन्यवाद। आपके मेडिकल टेस्ट के फीडबैक के लिए {company_name} आपसे दोबारा संपर्क कर सकती है।"
 2. "आपके मेडिकल रिपोर्ट और पॉलिसी के डॉक्यूमेंट्स आपको इंश्योरेंस कंपनी की तरफ से भेजे जाएंगे।"
-3. "हम {name}, MDIndia Health Insurance TPA Limited से {company_name} की ओर से बात कर रहे हैं। अपना समय देने के लिए धन्यवाद। आपका दिन शुभ हो!"
+3. "मैं {name}, MDIndia Health Insurance TPA Limited की तरफ से {company_name} के लिए बात कर रहा/रही था/थी। अपना समय देने के लिए धन्यवाद। आपका दिन शुभ हो!"
 MARATHI:
 1. "धन्यवाद. तुमच्या मेडिकल टेस्टच्या फीडबॅकसाठी {company_name} पुन्हा तुमच्याशी संपर्क करू शकते."
 2. "तुमचे मेडिकल रिपोर्ट आणि पॉलिसीचे डॉक्युमेंट्स तुम्हाला इन्शुरन्स कंपनीकडून पाठवले जातील."
