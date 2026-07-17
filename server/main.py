@@ -34,6 +34,9 @@ logger.setLevel(logging.INFO)
 
 server = AgentServer()
 
+WATCHDOG_TIMEOUT = 5  # seconds to wait in a "stuck" state before nudging
+STUCK_STATES = {"thinking", "listening"}  # states we don't expect to persist
+
 AGENT_LIB = {
     "Sanjay": {
         "gender": "male",
@@ -64,6 +67,50 @@ def load_gcp_credentials_json():
         with open(default_creds, "r", encoding="utf-8") as f:
             return json.load(f)
     return None
+
+
+import time
+
+WATCHDOG_TIMEOUT = 5  # seconds to wait in a "stuck" state before nudging
+STUCK_STATES = {"thinking", "listening"}  # states we don't expect to persist
+
+
+class TurnWatchdog:
+    def __init__(self, session: AgentSession, timeout: float = WATCHDOG_TIMEOUT):
+        self.session = session
+        self.timeout = timeout
+        self._task: asyncio.Task | None = None
+        self._current_state: str | None = None
+
+    def on_state_changed(self, new_state: str):
+        self._current_state = new_state
+        # cancel any pending watchdog timer, state has moved on
+        if self._task and not self._task.done():
+            self._task.cancel()
+
+        if new_state in STUCK_STATES:
+            self._task = asyncio.create_task(self._watch(new_state))
+
+    async def _watch(self, state_at_arm_time: str):
+        try:
+            await asyncio.sleep(self.timeout)
+        except asyncio.CancelledError:
+            return
+
+        # still stuck in the same state after timeout -> nudge
+        if self._current_state == state_at_arm_time:
+            logger.warning(
+                f"watchdog: agent stuck in '{state_at_arm_time}' for {self.timeout}s, nudging"
+            )
+            try:
+                self.session.generate_reply(
+                    instructions=(
+                        "You may have missed a response. Briefly check in with the "
+                        "user in case they are stuck and continue the conversation naturally if the user is responsive."
+                    )
+                )
+            except Exception:
+                logger.exception("watchdog: failed to trigger nudge")
 
 
 @server.rtc_session(agent_name="demo-agent")
@@ -115,6 +162,13 @@ async def entrypoint(ctx: JobContext):
             session.generate_reply(
                 instructions="It seems you are away. I'll end the call now. Goodbye!"
             )
+
+    watchdog = TurnWatchdog(session, timeout=5)
+
+    @session.on("agent_state_changed")
+    def _on_agent_state_changed(ev):
+        logger.info(f"agent_state -> {ev.new_state} at {time.time()}")
+        watchdog.on_state_changed(ev.new_state)
 
     if use_avatar:
         participant = None
