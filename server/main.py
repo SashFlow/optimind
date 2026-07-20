@@ -66,7 +66,7 @@ def build_s3_upload() -> S3Upload:
     )
 
 
-@server.rtc_session(agent_name="demo-agent-4")
+@server.rtc_session(agent_name="demo-agent")
 async def entrypoint(ctx: JobContext):
     # Connect to Room
     ctx.log_context_fields = {
