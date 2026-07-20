@@ -6,7 +6,7 @@ import logging
 import os
 import re
 from typing import Any
-from client.storage import gcp_storage_client
+from client.storage import s3_storage_client
 from datetime import datetime, timezone
 from livekit.agents import RunContext, function_tool, get_job_context
 
@@ -671,9 +671,9 @@ class MedicalExaminationAgent(ScenarioAgent):
         writer.writerow(["Generated At (UTC)", datetime.now(timezone.utc).isoformat()])
 
         csv_bytes = buffer.getvalue().encode("utf-8")
-        gcp_bucket = os.getenv("GCP_BUCKET_NAME", "").strip()
+        s3_bucket = os.getenv("S3_BUCKET_NAME", "").strip()
 
-        if not gcp_bucket:
+        if not s3_bucket:
             local_path = self._write_local_report(
                 csv_bytes=csv_bytes,
                 safe_room_name=safe_room_name,
@@ -681,16 +681,19 @@ class MedicalExaminationAgent(ScenarioAgent):
             )
             self._report_sent = True
             return (
-                "Medical report generated successfully. GCS upload skipped because "
-                f"GCP_BUCKET_NAME is not configured. Saved locally at {local_path}."
+                "Medical report generated successfully. S3 upload skipped because "
+                f"S3_BUCKET_NAME is not configured. Saved locally at {local_path}."
             )
 
         try:
-            bucket = gcp_storage_client.bucket(gcp_bucket)
-            blob = bucket.blob(object_key)
-            blob.upload_from_file(io.BytesIO(csv_bytes), content_type="text/csv")
+            s3_storage_client.put_object(
+                Bucket=s3_bucket,
+                Key=object_key,
+                Body=csv_bytes,
+                ContentType="text/csv",
+            )
         except Exception as exc:
-            logger.exception("Failed to upload medical report to GCS: %s", exc)
+            logger.exception("Failed to upload medical report to S3: %s", exc)
             local_path = self._write_local_report(
                 csv_bytes=csv_bytes,
                 safe_room_name=safe_room_name,
@@ -698,14 +701,14 @@ class MedicalExaminationAgent(ScenarioAgent):
             )
             self._report_sent = True
             return (
-                "Medical report generated successfully, but GCS upload failed. "
+                "Medical report generated successfully, but S3 upload failed. "
                 f"Saved locally at {local_path}."
             )
 
         self._report_sent = True
         return (
             "Medical report generated and uploaded successfully. "
-            f"GCS: gs://{gcp_bucket}/{object_key}."
+            f"S3: s3://{s3_bucket}/{object_key}."
         )
 
     @function_tool()

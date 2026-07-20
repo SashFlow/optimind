@@ -11,13 +11,12 @@ from livekit.agents import (
     cli,
     room_io,
 )
-import json
 from livekit import api
 from livekit.protocol.egress import (
     EncodedFileOutput,
     RoomCompositeEgressRequest,
     EncodedFileType,
-    GCPUpload,
+    S3Upload,
 )
 from livekit.plugins import anam, google, ai_coustics
 from livekit.agents.voice import AgentSession, UserStateChangedEvent
@@ -54,19 +53,20 @@ LANGUAGE_DICT = {
 }
 
 
-def load_gcp_credentials_json():
-    creds_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "").strip()
-    if creds_path and os.path.exists(creds_path):
-        with open(creds_path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    default_creds = "./creds.json"
-    if os.path.exists(default_creds):
-        with open(default_creds, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return None
+def build_s3_upload() -> S3Upload:
+    endpoint = os.getenv("AWS_S3_ENDPOINT", "").strip()
+    return S3Upload(
+        access_key=os.getenv("AWS_ACCESS_KEY_ID", "").strip(),
+        secret=os.getenv("AWS_SECRET_ACCESS_KEY", "").strip(),
+        session_token=os.getenv("AWS_SESSION_TOKEN", "").strip(),
+        region=os.getenv("AWS_REGION", os.getenv("AWS_DEFAULT_REGION", "")).strip(),
+        bucket=os.getenv("S3_BUCKET_NAME", "").strip(),
+        endpoint=endpoint,
+        force_path_style=bool(endpoint),
+    )
 
 
-@server.rtc_session(agent_name="demo-agent")
+@server.rtc_session(agent_name="demo-agent-4")
 async def entrypoint(ctx: JobContext):
     # Connect to Room
     ctx.log_context_fields = {
@@ -100,12 +100,10 @@ async def entrypoint(ctx: JobContext):
         llm=google.realtime.RealtimeModel(
             model="gemini-3.1-flash-live-preview",
             voice=agent["voice"],
-            language=LANGUAGE_DICT.get(language, "en"),
             tool_response_scheduling=FunctionResponseScheduling.WHEN_IDLE,
         ),
         tools=[transfer_to_human],
-        vad=ai_coustics.VAD(),
-        preemptive_generation=True,
+        preemptive_generation=False,
         user_away_timeout=3,
     )
 
@@ -165,10 +163,7 @@ async def entrypoint(ctx: JobContext):
             file=EncodedFileOutput(
                 file_type=EncodedFileType.MP4,
                 filepath=f"{ctx.room.name}/recording-session.mp4",
-                gcp=GCPUpload(
-                    bucket=os.getenv("GCP_BUCKET_NAME", "").strip(),
-                    credentials=os.getenv("GCP_SERVICE_ACCOUNT_JSON", "").strip(),
-                ),
+                s3=build_s3_upload(),
             ),
         )
     )

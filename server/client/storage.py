@@ -1,26 +1,34 @@
 import os
 
-from google.cloud import storage
+import boto3
 from dotenv import load_dotenv
 
 
-class _GCPStorageClientProxy:
-    """Lazy GCP storage client that resolves credentials when first used."""
+class _S3StorageClientProxy:
+    """Lazy S3 client that resolves credentials when first used."""
 
     def __init__(self) -> None:
         self._client = None
 
     def _build_client(self):
         load_dotenv()
-        creds_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "").strip()
-        if creds_path:
-            return storage.Client.from_service_account_json(creds_path)
-
-        default_creds = "./creds.json"
-        if os.path.exists(default_creds):
-            return storage.Client.from_service_account_json(default_creds)
-
-        return storage.Client()
+        endpoint = os.getenv("AWS_S3_ENDPOINT", "").strip() or None
+        region = (
+            os.getenv("AWS_REGION", "").strip()
+            or os.getenv("AWS_DEFAULT_REGION", "").strip()
+            or None
+        )
+        kwargs: dict = {
+            "service_name": "s3",
+            "aws_access_key_id": os.getenv("AWS_ACCESS_KEY_ID", "").strip() or None,
+            "aws_secret_access_key": os.getenv("AWS_SECRET_ACCESS_KEY", "").strip()
+            or None,
+            "aws_session_token": os.getenv("AWS_SESSION_TOKEN", "").strip() or None,
+            "region_name": region,
+        }
+        if endpoint:
+            kwargs["endpoint_url"] = endpoint
+        return boto3.client(**{k: v for k, v in kwargs.items() if v is not None})
 
     @property
     def client(self):
@@ -32,4 +40,4 @@ class _GCPStorageClientProxy:
         return getattr(self.client, item)
 
 
-gcp_storage_client = _GCPStorageClientProxy()
+s3_storage_client = _S3StorageClientProxy()
