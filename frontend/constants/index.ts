@@ -2,7 +2,7 @@ import type { ScenarioDetails } from '@/types';
 
 export const scenarios = {
   'medical-examination': {
-    sessionType: ['avatar', 'Audio'],
+    sessionType: ['avatar', 'Audio', 'phone'],
     title: 'Medical Examination Assistant',
     description:
       'An avatar assistant that guides users through a structured medical examination process for insurance applications.',

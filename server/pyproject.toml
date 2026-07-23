@@ -8,7 +8,7 @@ dependencies = [
     "boto3>=1.35.0",
     "google-genai>=1.73.1",
     "livekit>=1.1.8",
-    "livekit-agents[anam,cartesia,deepgram,google,silero]>=1.6.1",
+    "livekit-agents[anam,cartesia,deepgram,google,sarvam,silero]>=1.6.1",
     "livekit-plugins-ai-coustics==0.2.14",
     "livekit-plugins-google>=1.6.1",
     "livekit-plugins-turn-detector>=1.6.1",

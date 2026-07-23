@@ -273,6 +273,7 @@ INTERACTION_MODE_BY_SCENARIO_TYPE = {
     "audio": "audio",
     "avatar": "video",
     "calls": "audio",
+    "phone": "audio",
     "video": "video",
 }
 
@@ -424,10 +425,12 @@ def rows_from_mapping(mapping: Mapping[str, Any]) -> tuple[WidgetField, ...]:
     )
 
 
-def resolve_metadata_payload(metadata: str | None) -> tuple[str, str, str, str, dict]:
+def resolve_metadata_payload(
+    metadata: str | None,
+) -> tuple[str, str, str, str, dict, bool]:
     raw_metadata = (metadata or "").strip()
     if not raw_metadata:
-        return "audio", DEFAULT_SCENARIO, DEFAULT_NAME, DEFAULT_LANGUAGE, {}
+        return "audio", DEFAULT_SCENARIO, DEFAULT_NAME, DEFAULT_LANGUAGE, {}, False
 
     if raw_metadata.startswith("{"):
         try:
@@ -469,12 +472,22 @@ def resolve_metadata_payload(metadata: str | None) -> tuple[str, str, str, str, 
                     else {}
                 )
 
-                return interaction_mode, slug, agent_name, language, persona
+                staggered_mode = payload.get("staggeredMode", False) == "true"
+
+                return (
+                    interaction_mode,
+                    slug,
+                    agent_name,
+                    language,
+                    persona,
+                    staggered_mode,
+                )
 
     for prefix, interaction_mode in (
         ("video-", "video"),
         ("avatar-", "video"),
         ("audio-", "audio"),
+        ("phone-", "audio"),
         ("calls-", "audio"),
     ):
         if raw_metadata.startswith(prefix):
@@ -485,9 +498,28 @@ def resolve_metadata_payload(metadata: str | None) -> tuple[str, str, str, str, 
                 DEFAULT_NAME,
                 DEFAULT_LANGUAGE,
                 {},
+                False,
             )
 
-    return "audio", raw_metadata, DEFAULT_NAME, DEFAULT_LANGUAGE, {}
+    return "audio", raw_metadata, DEFAULT_NAME, DEFAULT_LANGUAGE, {}, False
+
+
+def extract_dial_phone_number(metadata: str | None) -> str | None:
+    """Return the PSTN number to dial from job metadata, if present."""
+    raw_metadata = (metadata or "").strip()
+    if not raw_metadata.startswith("{"):
+        return None
+    try:
+        payload = json.loads(raw_metadata)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(payload, Mapping):
+        return None
+    phone = payload.get("phone_number") or payload.get("phoneNumber")
+    if phone is None:
+        return None
+    phone_str = str(phone).strip()
+    return phone_str or None
 
 
 def extract_scenario_slug(metadata: str | None) -> str:

@@ -17,6 +17,7 @@ import {
 const modes = [
   { id: 'audio', label: 'Audio Assistant' },
   { id: 'avatar', label: 'Avatar Assistant' },
+  { id: 'phone', label: 'Phone Call' },
 ] as const;
 
 const agents = [
@@ -70,7 +71,7 @@ export default function Page() {
         <div className="space-y-3">
           <h1 className="text-4xl font-semibold tracking-tight">Sashflow</h1>
           <p className="text-muted-foreground max-w-2xl">
-            Explore audio and avatar Medical Examination Assistants.
+            Explore audio, avatar, and phone Medical Examination Assistants.
           </p>
         </div>
 
@@ -100,7 +101,7 @@ export default function Page() {
                   className={isSelected ? 'border-primary ring-primary/20 ring-2' : undefined}
                 >
                   <CardHeader className="space-y-4">
-                    {selectedMode === 'audio' ? (
+                    {selectedMode === 'audio' || selectedMode === 'phone' ? (
                       <AudioWaveformPreview />
                     ) : (
                       <div className="bg-muted/40 flex aspect-[3/2] w-full items-center justify-center gap-1 rounded-lg border px-4 py-3">
