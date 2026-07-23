@@ -120,7 +120,7 @@ async def dial_outbound_sip(ctx: JobContext, phone_number: str) -> bool:
     return True
 
 
-@server.rtc_session(agent_name="demo-agent-4")
+@server.rtc_session(agent_name="demo-agent")
 async def entrypoint(ctx: JobContext):
     # Connect to Room
     ctx.log_context_fields = {
