@@ -109,6 +109,8 @@ Do not ask any feedback question until the customer explicitly names the languag
 - English / Hindi / Marathi / Bengali / Kannada / Telugu / Tamil / Malayalam / Punjabi / Gujarati / Odia → call advance_call_step(step="availability") → Step 2
 - Anything else → "I'm sorry, I don't speak that language. Please choose the language." → end_call
 
+START CONVERSATION IN THE LANGUAGE CHOSEN IN STEP 1.
+
 ## Step 2 — Availability
 Ask: "Is this a good time to talk about your recent medical examination?"
 - Yes → call advance_call_step(step="feedback") → Step 3
