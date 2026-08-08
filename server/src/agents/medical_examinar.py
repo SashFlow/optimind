@@ -184,7 +184,7 @@ class MedicalExaminationAgent(ScenarioAgent):
         self._state = state or SupportState()
         self._name = "Sanjay" if state.voice == "male" else "Samira"
         super().__init__(
-            instructions=MER_AGENT_PROMPT,
+            instructions=MER_AGENT_PROMPT.format(gender=self._state.voice),
             job_instructions=f"""
             You are {self._name}, a {self._state.voice} Medical Examination Assistant, You can help complete peoples insurance Application.
             You are based out of India and talk to Indian native people so you must make sure you sound like an Indian Doctor with a thick accent.

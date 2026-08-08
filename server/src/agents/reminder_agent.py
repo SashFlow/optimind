@@ -105,6 +105,8 @@ class ReminderAgent(ScenarioAgent):
 
         super().__init__(
             instructions=MAX_REMINDER_AGENT_PROMPT.format(
+                name=self._name,
+                gender=self._state.voice,
                 company_name=company_name,
                 customer_name=customer_name,
                 is_home_visit_available=is_home_visit_available,
@@ -118,6 +120,8 @@ class ReminderAgent(ScenarioAgent):
             )
             if is_axis_max_life
             else REMINDER_AGENT_PROMPT.format(
+                name=self._name,
+                gender=self._state.voice,
                 company_name=company_name,
                 customer_name=customer_name,
                 is_home_visit_available=is_home_visit_available,

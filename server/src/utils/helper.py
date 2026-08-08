@@ -1,9 +1,10 @@
 """Helper functions for the agent."""
 
 import asyncio
-from asyncio.log import logger
 import json
+import logging
 from collections.abc import Mapping
+
 from livekit.agents import AgentSession
 
 from constants import (
@@ -21,6 +22,8 @@ from constants import (
     INTERACTION_MODES,
     PERSONAS,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def normalize_lookup_key(value: str) -> str:

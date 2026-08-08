@@ -349,6 +349,8 @@ class MedicalAppointmentAgent(ScenarioAgent):
 
         super().__init__(
             instructions=MAX_MEDICAL_APPOINTMENT_PROMPT.format(
+                name=self._name,
+                gender=self._state.voice,
                 company_name=company_name,
                 current_time=current_time,
                 customer_name=customer_name,
@@ -360,6 +362,8 @@ class MedicalAppointmentAgent(ScenarioAgent):
             )
             if is_axis_max_life
             else MEDICAL_APPOINTMENT_PROMPT.format(
+                name=self._name,
+                gender=self._state.voice,
                 company_name=company_name,
                 customer_name=customer_name,
                 pin_code=address["pin_code"],

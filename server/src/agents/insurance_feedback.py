@@ -68,6 +68,7 @@ class InsuranceFeedbackAgent(ScenarioAgent):
 
         super().__init__(
             instructions=INSURANCE_FEEDBACK_AGENT_PROMPT.format(
+                name=self._name,
                 company_name=company_name,
                 current_time=current_time,
                 customer_name=customer_name,

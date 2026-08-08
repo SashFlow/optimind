@@ -37,7 +37,14 @@ from utils.helper import (
     resolve_metadata_payload,
     apply_tts_presence,
 )
-from constants import EMOTION_PROFILES, SupportState
+from constants import (
+    DEFAULT_NAME,
+    EMOTION_PROFILES,
+    FEMALE_SPEAKER,
+    MALE_SPEAKER,
+    SarvamLanguage,
+    SupportState,
+)
 from agents import get_agent
 
 load_dotenv()
@@ -51,22 +58,14 @@ AGENT_LIB = {
     "Sanjay": {
         "gender": "male",
         "avatar": "5f46f99e-c4be-4f22-bde2-b364975a0851",
-        "voice": "Charon",
     },
     "Samira": {
         "gender": "female",
         "avatar": "d3e94c42-b348-4bec-8225-e47a682128a0",
-        "voice": "Leda",
     },
 }
-LANGUAGE_DICT = {
-    "English": "en",
-    "Hindi": "hi",
-    "Marathi": "mr",
-    "Bengali": "bn",
-}
 
-# Sarvam expects BCP-47 India locales for native accent STT/TTS.
+# Display names from job metadata → Sarvam BCP-47 India locales.
 SARVAM_LANGUAGE_CODES = {
     "English": "en-IN",
     "Hindi": "hi-IN",
@@ -74,11 +73,23 @@ SARVAM_LANGUAGE_CODES = {
     "Bengali": "bn-IN",
 }
 
-# bulbul:v3 speakers only (abhilash/manisha are v2-incompatible).
-SARVAM_SPEAKERS = {
-    "male": "shubh",
-    "female": "ritu",
-}
+
+def resolve_session_language(language: str | None) -> SarvamLanguage:
+    """Map metadata language labels/codes to a Sarvam TTS locale."""
+    raw = (language or "").strip()
+    if not raw:
+        return "en-IN"
+    if raw in SARVAM_LANGUAGE_CODES:
+        return SARVAM_LANGUAGE_CODES[raw]  # type: ignore[return-value]
+    normalized = normalize_tts_language(raw)
+    if normalized is not None:
+        return normalized
+    # Case-insensitive display-name lookup (e.g. "hindi").
+    for label, code in SARVAM_LANGUAGE_CODES.items():
+        if label.casefold() == raw.casefold():
+            return code  # type: ignore[return-value]
+    logger.warning("unrecognized language %r; defaulting to en-IN", raw)
+    return "en-IN"
 
 
 def build_s3_upload() -> S3Upload:
@@ -135,7 +146,7 @@ async def dial_outbound_sip(ctx: JobContext, phone_number: str) -> bool:
     return True
 
 
-@server.rtc_session(agent_name="demo-agent")
+@server.rtc_session(agent_name=os.getenv("AGENT_NAME", "demo-agent"))
 async def entrypoint(ctx: JobContext):
     """Entrypoint for the support agent."""
     # Connect to Room
@@ -173,11 +184,20 @@ async def entrypoint(ctx: JobContext):
         audio_output=room_io.AudioOutputOptions(),
     )
 
+    if selected_agent not in AGENT_LIB:
+        logger.warning(
+            "unknown selectedAgent %r; falling back to %s",
+            selected_agent,
+            DEFAULT_NAME,
+        )
+        selected_agent = DEFAULT_NAME
     agent = AGENT_LIB[selected_agent]
+    voice = agent["gender"]
+    speaker = MALE_SPEAKER if voice == "male" else FEMALE_SPEAKER
 
     state = SupportState(
-        language=language,
-        voice=agent["voice"],
+        language=resolve_session_language(language),
+        voice=voice,
     )
 
     session = AgentSession[SupportState](
@@ -188,26 +208,19 @@ async def entrypoint(ctx: JobContext):
             mode="codemix",
             sample_rate=16000,
             high_vad_sensitivity=True,
-            # Ask Sarvam to finalize the transcript as soon as it sees our flush —
-            # shaves the STT-side tail latency off every turn.
             flush_signal=True,
         ),
         tts=sarvam.TTS(
             model="bulbul:v3",
-            speaker=agent["voice"],
+            speaker=speaker,
             target_language_code=state.language,
             pace=float(EMOTION_PROFILES["warm"]["pace"]),
             temperature=float(EMOTION_PROFILES["warm"]["temperature"]),
-            speech_sample_rate=8000,
+            speech_sample_rate=8000 if is_phone_call else 16000,
         ),
         turn_handling=TurnHandlingOptions(
             turn_detection=inference.TurnDetector(),
-            # Dynamic endpointing: shrinks the wait when the semantic turn model is
-            # confident the user is done, and only stretches toward max_delay when it
-            # isn't sure (e.g. a slow Sarvam final) — much snappier than a fixed delay
-            # on every single turn.
             endpointing={"mode": "dynamic", "min_delay": 0.2, "max_delay": 2.2},
-            # Start LLM+TTS before the turn is fully confirmed.
             preemptive_generation={"enabled": True, "preemptive_tts": True},
         ),
         tools=[transfer_to_human],
