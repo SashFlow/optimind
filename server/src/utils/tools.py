@@ -1,57 +1,11 @@
-import asyncio
+"""Tools for the support agent."""
+
 import logging
 
-from livekit import api
-from livekit.agents import RunContext, function_tool, get_job_context
-from livekit.agents.beta.tools import EndCallTool
+from livekit.agents import RunContext, function_tool
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-
-# Add this function definition anywhere
-async def hangup_call():
-    ctx = get_job_context()
-    if ctx is None:
-        # Not running in a job context
-        return
-
-    await ctx.api.room.delete_room(
-        api.DeleteRoomRequest(
-            room=ctx.room.name,
-        )
-    )
-
-
-@function_tool
-async def end_call(ctx: RunContext):
-    """End the current call or live session in a controlled way.
-
-    Use this when the user explicitly wants to stop, or the conversation has naturally
-    finished, the user is no longer engaging, or a polite close-out is the best
-    experience. Prefer giving a short closing line before invoking this tool so the
-    ending feels natural to the user.
-    """
-    ctx.session.shutdown()
-    return "Call Ended. Respond with 'BYE' to the user."
-
-
-@function_tool(name="end_call")
-async def end_call_terminal(ctx: RunContext):
-    """End the call after your final goodbye has been spoken.
-
-    Call exactly once at the end of the conversation. Speak your goodbye first in the
-    same turn, then invoke this tool — the platform waits until you finish speaking.
-    After this tool returns, produce no further speech or tool calls.
-    """
-    if getattr(ctx.session, "_end_call_invoked", False):
-        logger.debug("end_call ignored — already invoked")
-        return "TERMINAL: Call already ended. Produce no further output."
-
-    ctx.session._end_call_invoked = True
-    logger.debug("end_call_terminal invoked")
-    ctx.session.shutdown()
-    return "TERMINAL: Call ended. Produce no further output."
 
 
 @function_tool
@@ -73,7 +27,7 @@ async def transfer_to_human(ctx: RunContext) -> str:
         logger.info("Call transferred to human agent successfully.")
         return "Simulating call transfer to human agent."
     except Exception as e:
-        logger.error(f"Failed to transfer call: {e}")
+        logger.error("Failed to transfer call: %s", e)
         return f"Error: Failed to transfer call - {e}"
 
 
@@ -202,6 +156,3 @@ def get_centers_by_pin(pin: str) -> dict:
         "options": options,
         "source": "hardcoded",
     }
-
-
-end_call_tool = EndCallTool().tools[0]

@@ -1,9 +1,4 @@
 MAX_REMINDER_AGENT_PROMPT = """
-  # Role
-  You are {name}, a confident {gender} and friendly outbound voice agent calling from MDIndia Health Insurance TPA Ltd.
-  on behalf of {company_name} to remind the customer about their scheduled pre-policy medical examination in India.
-  The current local time is {current_time}.
-
   The caller must ensure that the following points are covered during the call:
   1. Call Introduction
   2. Call Purpose
@@ -303,11 +298,6 @@ MAX_REMINDER_AGENT_PROMPT = """
 """
 
 REMINDER_AGENT_PROMPT = """
-  # Role
-  You are {name}, a confident {gender} and friendly outbound voice agent calling from MDIndia Health Insurance TPA Ltd.
-  on behalf of {company_name} to remind the customer about their scheduled pre-policy medical examination in India.
-  The current local time is {current_time}.
-
   The caller must ensure that the following points are covered during the call:
   1. Call Introduction
   2. Call Purpose

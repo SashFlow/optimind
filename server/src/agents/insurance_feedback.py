@@ -1,14 +1,15 @@
 import asyncio
 import logging
 import re
+import random
 from datetime import datetime
 from typing import Any
 from zoneinfo import ZoneInfo
 
 from agents.base import ScenarioAgent
-from agents.lib import INSURANCE_FEEDBACK_AGENT_PROMPT
+from prompts import INSURANCE_FEEDBACK_AGENT_PROMPT
 from livekit.agents import RunContext, function_tool
-import random
+from constants import SupportState
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +52,9 @@ def resolve_is_home_visit(validation_details: dict[str, Any]) -> str:
 
 
 class InsuranceFeedbackAgent(ScenarioAgent):
-    def __init__(self, name, gender, validation_details) -> None:
+    def __init__(self, state: SupportState, validation_details) -> None:
+        self._state = state or SupportState()
+        self._name = "Sanjay" if state.voice == "male" else "Samira"
         self.validation_details = validation_details
         self._current_step: str = "greeting"
         self._feedback: dict[str, dict[str, Any]] = {}
@@ -64,16 +67,19 @@ class InsuranceFeedbackAgent(ScenarioAgent):
         is_home_visit = random.choice(["YES", "NO"])
 
         super().__init__(
-            language="english",
             instructions=INSURANCE_FEEDBACK_AGENT_PROMPT.format(
-                name=name,
-                gender=gender,
                 company_name=company_name,
                 current_time=current_time,
                 customer_name=customer_name,
                 is_home_visit=is_home_visit,
                 customer_salutation=customer_salutation,
             ),
+            job_instructions=f"""
+            You are {self._name}, a confident, friendly {self._state.voice} outbound voice agent calling on behalf of {company_name}
+            to collect feedback from a customer about their medical examination experience in India.
+
+            """,
+            state=self._state,
         )
 
     def _step_guidance(self) -> str:
@@ -162,45 +168,4 @@ class InsuranceFeedbackAgent(ScenarioAgent):
                 if is_complaint
                 else "Acknowledge briefly, then ask the next Step 3 feedback question."
             ),
-        }
-
-    @function_tool()
-    async def end_call(self, context: RunContext) -> str:
-        """End the call after your final goodbye has been spoken.
-
-        Call exactly once at the end of the conversation. Speak your goodbye first in the
-        same turn, then invoke this tool. After this tool returns, produce no further
-        speech or tool calls.
-        """
-        if self._end_call_invoked or getattr(
-            context.session, "_end_call_invoked", False
-        ):
-            logger.debug("end_call ignored — already invoked")
-            return "TERMINAL: Call already ended. Produce no further output."
-
-        self._end_call_invoked = True
-        context.session._end_call_invoked = True
-        logger.info("Insurance feedback call ending")
-        context.session.shutdown()
-        return "TERMINAL: Call ended. Produce no further output."
-
-    @function_tool()
-    async def schedule_callback(
-        self, _context: RunContext, preferred_time: str = ""
-    ) -> dict[str, Any]:
-        """Schedule a callback for the customer at a preferred time.
-
-        Use when the customer is unavailable, interrupted, or requests a later call.
-
-        Args:
-            preferred_time: Customer's preferred callback time (free text). Optional.
-        """
-        await asyncio.sleep(2)
-        callback_time = preferred_time.strip() if preferred_time else "within 2 hours"
-        self._current_step = "closing"
-        return {
-            "scheduled": True,
-            "callback_time": callback_time,
-            "current_step": self._current_step,
-            "next_action": "Say a brief goodbye, then call end_call exactly once.",
         }

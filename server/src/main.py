@@ -1,3 +1,5 @@
+"""Main module for the support agent."""
+
 import logging
 import asyncio
 import os
@@ -6,9 +8,11 @@ from livekit.agents import (
     AgentServer,
     AudioConfig,
     BackgroundAudioPlayer,
+    TurnHandlingOptions,
     BuiltinAudioClip,
     JobContext,
     cli,
+    inference,
     room_io,
 )
 from livekit import api
@@ -18,13 +22,23 @@ from livekit.protocol.egress import (
     EncodedFileType,
     S3Upload,
 )
-from livekit.plugins import anam, google, ai_coustics, sarvam
-from livekit.agents.voice import AgentSession, UserStateChangedEvent
-from agents.common import extract_dial_phone_number, resolve_metadata_payload
-from agents.tools import transfer_to_human
-from utils.helper import get_agent
-from google.genai.types import FunctionResponseScheduling
-import utils.patch as patch  # noqa: F401
+from livekit.protocol.sip import CreateSIPParticipantRequest
+from livekit.protocol.egress import EncodingOptionsPreset
+from livekit.plugins import anam, ai_coustics, sarvam
+from livekit.agents.voice import (
+    AgentSession,
+    UserStateChangedEvent,
+    UserInputTranscribedEvent,
+)
+from utils.tools import transfer_to_human
+from utils.helper import (
+    extract_dial_phone_number,
+    normalize_tts_language,
+    resolve_metadata_payload,
+    apply_tts_presence,
+)
+from constants import EMOTION_PROFILES, SupportState
+from agents import get_agent
 
 load_dotenv()
 
@@ -68,6 +82,7 @@ SARVAM_SPEAKERS = {
 
 
 def build_s3_upload() -> S3Upload:
+    """Build the S3 upload object."""
     endpoint = os.getenv("AWS_S3_ENDPOINT", "").strip()
     return S3Upload(
         access_key=os.getenv("AWS_ACCESS_KEY_ID", "").strip(),
@@ -93,7 +108,7 @@ async def dial_outbound_sip(ctx: JobContext, phone_number: str) -> bool:
 
     try:
         await ctx.api.sip.create_sip_participant(
-            api.CreateSIPParticipantRequest(
+            CreateSIPParticipantRequest(
                 room_name=ctx.room.name,
                 sip_trunk_id=trunk_id,
                 sip_call_to=phone_number,
@@ -122,6 +137,7 @@ async def dial_outbound_sip(ctx: JobContext, phone_number: str) -> bool:
 
 @server.rtc_session(agent_name="demo-agent")
 async def entrypoint(ctx: JobContext):
+    """Entrypoint for the support agent."""
     # Connect to Room
     ctx.log_context_fields = {
         "room": ctx.room.name,
@@ -138,8 +154,7 @@ async def entrypoint(ctx: JobContext):
     egress = lkapi.egress
 
     # Session Creation
-    print("metadata", ctx.job.metadata)
-    interaction_mode, slug, selected_agent, language, persona, staggered_mode = (
+    interaction_mode, slug, selected_agent, language, persona = (
         resolve_metadata_payload(ctx.job.metadata)
     )
     # PSTN calls are always audio-only (no avatar).
@@ -160,40 +175,43 @@ async def entrypoint(ctx: JobContext):
 
     agent = AGENT_LIB[selected_agent]
 
-    if staggered_mode:
-        # Native Indic accents: pin *-IN locale, use v3-compatible speakers,
-        # and codemix STT for Hinglish / medical English loanwords.
-        sarvam_speaker = SARVAM_SPEAKERS.get(agent["gender"], "shubh")
-        session = AgentSession(
-            stt=sarvam.STT(
-                model="saaras:v3",
-                mode="codemix",
-                sample_rate=16000,
-                high_vad_sensitivity=True,
-                flush_signal=True,
-            ),
-            tts=sarvam.TTS(
-                model="bulbul:v3",
-                speaker=sarvam_speaker,
-                speech_sample_rate=22050,
-                pace=1.2,
-                temperature=0.6,
-                output_audio_bitrate="128k",
-                output_audio_codec="mp3",
-            ),
-            llm=google.LLM(model="gemini-2.5-flash"),
-        )
-    else:
-        session = AgentSession(
-            llm=google.realtime.RealtimeModel(
-                model="gemini-3.1-flash-live-preview",
-                voice=agent["voice"],
-                tool_response_scheduling=FunctionResponseScheduling.WHEN_IDLE,
-            ),
-            tools=[transfer_to_human],
-            preemptive_generation=False,
-            user_away_timeout=3,
-        )
+    state = SupportState(
+        language=language,
+        voice=agent["voice"],
+    )
+
+    session = AgentSession[SupportState](
+        userdata=state,
+        stt=sarvam.STT(
+            model="saaras:v3",
+            language="unknown",
+            mode="codemix",
+            sample_rate=16000,
+            high_vad_sensitivity=True,
+            # Ask Sarvam to finalize the transcript as soon as it sees our flush —
+            # shaves the STT-side tail latency off every turn.
+            flush_signal=True,
+        ),
+        tts=sarvam.TTS(
+            model="bulbul:v3",
+            speaker=agent["voice"],
+            target_language_code=state.language,
+            pace=float(EMOTION_PROFILES["warm"]["pace"]),
+            temperature=float(EMOTION_PROFILES["warm"]["temperature"]),
+            speech_sample_rate=8000,
+        ),
+        turn_handling=TurnHandlingOptions(
+            turn_detection=inference.TurnDetector(),
+            # Dynamic endpointing: shrinks the wait when the semantic turn model is
+            # confident the user is done, and only stretches toward max_delay when it
+            # isn't sure (e.g. a slow Sarvam final) — much snappier than a fixed delay
+            # on every single turn.
+            endpointing={"mode": "dynamic", "min_delay": 0.2, "max_delay": 2.2},
+            # Start LLM+TTS before the turn is fully confirmed.
+            preemptive_generation={"enabled": True, "preemptive_tts": True},
+        ),
+        tools=[transfer_to_human],
+    )
 
     @session.on("user_state_changed")
     def _on_user_state_changed(ev: UserStateChangedEvent):
@@ -201,6 +219,18 @@ async def entrypoint(ctx: JobContext):
             session.generate_reply(
                 instructions="It seems you are away. I'll end the call now. Goodbye!"
             )
+
+    @session.on("user_input_transcribed")
+    def _sync_language(ev: UserInputTranscribedEvent) -> None:
+        if not ev.is_final or not ev.language:
+            return
+        state.last_heard_language = str(ev.language)
+        language = normalize_tts_language(ev.language)
+        # Apply as soon as STT detects language so preemptive TTS uses the right code.
+        if language is not None and language != state.language:
+            state.language = language
+            apply_tts_presence(session, state)
+            logger.info("auto language=%s", language)
 
     if use_avatar:
         participant = None
@@ -236,7 +266,7 @@ async def entrypoint(ctx: JobContext):
             room_options.audio_output = True
 
     await session.start(
-        agent=get_agent(slug, selected_agent, agent, language, persona),
+        agent=get_agent(slug, state, persona),
         room=ctx.room,
         room_options=room_options,
     )
@@ -247,7 +277,7 @@ async def entrypoint(ctx: JobContext):
             room_name=ctx.room.name,
             audio_only=is_phone_call,
             layout="grid",
-            preset=api.EncodingOptionsPreset.H264_720P_30,
+            preset=EncodingOptionsPreset.H264_720P_30,
             file=EncodedFileOutput(
                 file_type=EncodedFileType.MP4,
                 filepath=f"{ctx.room.name}/recording-session.mp4",

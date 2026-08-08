@@ -13,8 +13,8 @@ from livekit.agents import RunContext, function_tool
 
 from client.appointment_db import create_appointment
 from agents.base import ScenarioAgent
-from agents.common import normalize_lookup_key
-from agents.lib import MAX_MEDICAL_APPOINTMENT_PROMPT, MEDICAL_APPOINTMENT_PROMPT
+from prompts import MAX_MEDICAL_APPOINTMENT_PROMPT, MEDICAL_APPOINTMENT_PROMPT
+from constants import SupportState
 
 logger = logging.getLogger(__name__)
 
@@ -325,9 +325,9 @@ def _normalize_appointment_time(raw: str) -> str:
 
 
 class MedicalAppointmentAgent(ScenarioAgent):
-    def __init__(
-        self, name: str, gender: str, language: str, validation_details: dict
-    ) -> None:
+    def __init__(self, state: SupportState, validation_details: dict) -> None:
+        self._state = state or SupportState()
+        self._name = "Sanjay" if state.voice == "male" else "Samira"
         self.validation_details = validation_details
         self._dob_attempts: int = 0
         self._current_step: str = "greeting"
@@ -348,10 +348,7 @@ class MedicalAppointmentAgent(ScenarioAgent):
         self._end_call_invoked = False
 
         super().__init__(
-            language=language,
             instructions=MAX_MEDICAL_APPOINTMENT_PROMPT.format(
-                name=name,
-                gender=gender,
                 company_name=company_name,
                 current_time=current_time,
                 customer_name=customer_name,
@@ -363,9 +360,6 @@ class MedicalAppointmentAgent(ScenarioAgent):
             )
             if is_axis_max_life
             else MEDICAL_APPOINTMENT_PROMPT.format(
-                name=name,
-                gender=gender,
-                current_time=current_time,
                 company_name=company_name,
                 customer_name=customer_name,
                 pin_code=address["pin_code"],
@@ -374,6 +368,12 @@ class MedicalAppointmentAgent(ScenarioAgent):
                 center_name=center["name"],
                 center_address=center["address"],
             ),
+            job_instructions=f"""
+            You are {self._name}, a confident {self._state.voice} and friendly outbound voice agent calling from MDIndia Health Insurance TPA Ltd.
+            on behalf of {company_name} to schedule mandatory pre-policy medical examination appointments in India.
+            The current local time is {current_time}.
+            """,
+            state=self._state,
         )
 
     # -----------------------------------------------------------------------
@@ -382,7 +382,7 @@ class MedicalAppointmentAgent(ScenarioAgent):
 
     @function_tool()
     async def book_home_visit(
-        self, context: RunContext, date: str, time: str
+        self, _context: RunContext, date: str, time: str
     ) -> dict[str, Any]:
         """Confirm a home visit appointment at the customer's preferred date and time.
 
@@ -435,7 +435,7 @@ class MedicalAppointmentAgent(ScenarioAgent):
 
     @function_tool()
     async def book_center_visit(
-        self, context: RunContext, center_id: str, date: str, time: str
+        self, _context: RunContext, center_id: str, date: str, time: str
     ) -> dict[str, Any]:
         """Confirm the center visit appointment at the customer's preferred date and time.
 
@@ -493,46 +493,3 @@ class MedicalAppointmentAgent(ScenarioAgent):
             "time": norm_time,
             "next_step": "confirm_booking",
         }
-
-    # -----------------------------------------------------------------------
-    # Notification & flow control tools
-    # -----------------------------------------------------------------------
-
-    @function_tool()
-    async def schedule_callback(
-        self, context: RunContext, preferred_time: str = ""
-    ) -> dict[str, Any]:
-        """Schedule a callback for the customer at a preferred time.
-
-        Use when the customer is unavailable, interrupts, or requests a later call.
-
-        Args:
-            preferred_time: Customer's preferred callback time (free text). Optional.
-        """
-        await asyncio.sleep(2)  # Simulate thinking time before responding
-        callback_time = preferred_time.strip() if preferred_time else "within 2 hours"
-        return {
-            "scheduled": True,
-            "callback_time": callback_time,
-            "next_step": "close",
-        }
-
-    @function_tool()
-    async def end_call(self, context: RunContext) -> str:
-        """End the call after your final goodbye has been spoken.
-
-        Call exactly once at the end of the conversation. Speak your goodbye first in the
-        same turn, then invoke this tool. After this tool returns, produce no further
-        speech or tool calls.
-        """
-        if self._end_call_invoked or getattr(
-            context.session, "_end_call_invoked", False
-        ):
-            logger.debug("end_call ignored — already invoked")
-            return "TERMINAL: Call already ended. Produce no further output."
-
-        self._end_call_invoked = True
-        context.session._end_call_invoked = True
-        logger.info("Medical appointment call ending")
-        context.session.shutdown()
-        return "TERMINAL: Call ended. Produce no further output."

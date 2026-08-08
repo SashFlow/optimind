@@ -1,23 +1,20 @@
 import asyncio
 import logging
-from datetime import datetime
 from typing import Any
-from zoneinfo import ZoneInfo
 import random
 from livekit.agents import RunContext, function_tool
 
 from client.appointment_db import reschedule_appointment as db_reschedule_appointment
 from agents.base import ScenarioAgent
+from prompts import REMINDER_AGENT_PROMPT, MAX_REMINDER_AGENT_PROMPT
+from constants import SupportState
 from .medical_appointment import (
     INSURANCE_COMPANIES,
     _normalize_appointment_date,
     _normalize_appointment_time,
 )
-from agents.lib import REMINDER_AGENT_PROMPT, MAX_REMINDER_AGENT_PROMPT
 
 logger = logging.getLogger(__name__)
-
-INDIA_TZ = ZoneInfo("Asia/Kolkata")
 
 
 APPOINTMENTS = [
@@ -75,14 +72,15 @@ APPOINTMENTS = [
 
 
 class ReminderAgent(ScenarioAgent):
-    def __init__(self, name, gender, language, validation_details) -> None:
+    def __init__(self, state: SupportState, validation_details: dict) -> None:
+        self._state = state or SupportState()
+        self._name = "Sanjay" if state.voice == "male" else "Samira"
         self.validation_details = validation_details
         self.appointment = random.choice(APPOINTMENTS)
         self._dob_attempts: int = 0
         self._current_step: str = "greeting"
 
         customer_name = validation_details.get("full_name", "the customer")
-        current_time = datetime.now(INDIA_TZ).strftime("%A, %d %B %Y %H:%M IST")
         company_name = random.choice(INSURANCE_COMPANIES)
 
         is_axis_max_life = company_name == "Axis Max-Life Insurance"
@@ -106,12 +104,8 @@ class ReminderAgent(ScenarioAgent):
             }
 
         super().__init__(
-            language=language,
             instructions=MAX_REMINDER_AGENT_PROMPT.format(
-                name=name,
-                gender=gender,
                 company_name=company_name,
-                current_time=current_time,
                 customer_name=customer_name,
                 is_home_visit_available=is_home_visit_available,
                 appointment_date=self.appointment.get("date", ""),
@@ -124,10 +118,7 @@ class ReminderAgent(ScenarioAgent):
             )
             if is_axis_max_life
             else REMINDER_AGENT_PROMPT.format(
-                name=name,
-                gender=gender,
                 company_name=company_name,
-                current_time=current_time,
                 customer_name=customer_name,
                 is_home_visit_available=is_home_visit_available,
                 appointment_date=self.appointment.get("date", ""),
@@ -138,6 +129,11 @@ class ReminderAgent(ScenarioAgent):
                 center_name=self.appointment.get("center_name", ""),
                 center_address=self.appointment.get("center_address", ""),
             ),
+            job_instructions=f"""
+            You are {self._name}, a confident {self._state.voice} and friendly outbound voice agent calling from MDIndia Health Insurance TPA Ltd.
+            on behalf of {company_name} to remind the customer about their scheduled pre-policy medical examination in India.
+            """,
+            state=self._state,
         )
 
     # -----------------------------------------------------------------------

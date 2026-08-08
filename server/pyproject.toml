@@ -15,6 +15,7 @@ dependencies = [
     "livekit-protocol>=1.1.8",
     "psycopg[binary]>=3.2.10",
     "python-dotenv>=1.2.2",
+    "sarvamai>=0.1.30",
     "sqlalchemy>=2.0.41",
     "tzdata>=2026.1",
 ]

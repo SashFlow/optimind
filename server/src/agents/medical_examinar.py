@@ -1,19 +1,17 @@
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
 import os
 import re
+from datetime import datetime, timezone
 from typing import Any
 from client.storage import s3_storage_client
-from datetime import datetime, timezone
 from livekit.agents import RunContext, function_tool, get_job_context
 
-from agents.tools import hangup_call
-
+from constants import SupportState
+from prompts import MER_AGENT_PROMPT
 from .base import ScenarioAgent
-from agents.lib import MER_AGENT_PROMPT
 
 
 logger = logging.getLogger(__name__)
@@ -180,12 +178,19 @@ QUESTION_CATALOG: dict[str, dict[str, Any]] = {
 
 
 class MedicalExaminationAgent(ScenarioAgent):
-    def __init__(self, name, gender, language) -> None:
+    """Medical Examination Agent"""
+
+    def __init__(self, state: SupportState) -> None:
+        self._state = state or SupportState()
+        self._name = "Sanjay" if state.voice == "male" else "Samira"
         super().__init__(
-            language=language,
-            instructions=MER_AGENT_PROMPT.format(
-                name=name, gender=gender, language=language
-            ),
+            instructions=MER_AGENT_PROMPT,
+            job_instructions=f"""
+            You are {self._name}, a {self._state.voice} Medical Examination Assistant, You can help complete peoples insurance Application.
+            You are based out of India and talk to Indian native people so you must make sure you sound like an Indian Doctor with a thick accent.
+            User has selected {self._state.language} as their primary language. YOU MUST CONVERSE IN {self._state.language}.
+            """,
+            state=self._state,
         )
 
         self._report_sent = False
@@ -359,12 +364,6 @@ class MedicalExaminationAgent(ScenarioAgent):
                         "covid_vaccinated: reason must include dates for dose 1 and dose 2"
                     )
                 continue
-
-            # for keyword in meta.get("detail_keywords", ()):
-            #     if keyword not in reason_lower:
-            #         detail_gaps.append(
-            #             f"{question_id}: reason must include '{keyword}' details"
-            #         )
 
         return missing_required, detail_gaps
 
@@ -616,23 +615,6 @@ class MedicalExaminationAgent(ScenarioAgent):
                 "before sending the report."
             )
 
-        # missing_required, detail_gaps = self._validate_answers(self._session_answers)
-        # if missing_required or detail_gaps:
-        #     missing_text = ", ".join(sorted(set(missing_required))) or "none"
-        #     detail_text = "; ".join(detail_gaps) or "none"
-        #     follow_up_prompts = self._build_follow_up_prompts(
-        #         missing_required, detail_gaps
-        #     )
-        #     follow_up_text = (
-        #         " | ".join(follow_up_prompts) or "Please verify the missing answers."
-        #     )
-        #     return (
-        #         "Medical report validation failed. Do not end the call. "
-        #         f"Missing required question_ids: {missing_text}. "
-        #         f"Detail gaps: {detail_text}. "
-        #         f"Ask these follow-up questions next: {follow_up_text}."
-        #     )
-
         import csv
         import io
 
@@ -710,43 +692,3 @@ class MedicalExaminationAgent(ScenarioAgent):
             "Medical report generated and uploaded successfully. "
             f"S3: s3://{s3_bucket}/{object_key}."
         )
-
-    @function_tool()
-    async def goodbye(
-        self,
-        context: RunContext,
-    ) -> str:
-        """
-        You should call this function when the user indicates they have no more questions or needs, such as by saying "no thanks", "that's all", "goodbye", "thank you", or similar phrases. When you call this function, you should first generate a friendly goodbye message to the user, such as "Thank you for your time. Have a great day ahead!" and then end the call cleanly.
-         - Generate a friendly goodbye message to the user.
-         - Do not call this function unless the user has indicated they have no more questions or needs
-         - After generating the goodbye message, end the call cleanly.
-        """
-
-        async def _end_after_delay():
-            await asyncio.sleep(9)
-            context.session.shutdown()
-            await hangup_call()
-
-        asyncio.ensure_future(_end_after_delay())
-        return "Say have a nice day to the user in a friendly manner and end the call."
-
-    @function_tool()
-    async def end_call(self, context: RunContext) -> str:
-        """End the call after your final goodbye has been spoken.
-
-        Call exactly once at the end of the conversation. Speak your goodbye first in the
-        same turn, then invoke this tool. After this tool returns, produce no further
-        speech or tool calls.
-        """
-        if self._end_call_invoked or getattr(
-            context.session, "_end_call_invoked", False
-        ):
-            logger.debug("end_call ignored — already invoked")
-            return "TERMINAL: Call already ended. Produce no further output."
-
-        self._end_call_invoked = True
-        context.session._end_call_invoked = True
-        logger.info("Medical examination call ending")
-        context.session.shutdown()
-        return "TERMINAL: Call ended. Produce no further output."
