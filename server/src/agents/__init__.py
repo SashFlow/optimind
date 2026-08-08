@@ -10,11 +10,11 @@ from .insurance_feedback import InsuranceFeedbackAgent
 
 def get_agent(slug: str, state: SupportState, persona: dict) -> Agent:
     """Get the agent for the given slug."""
-    if slug == "medical-appointment":
+    if slug == "medical-examination":
         return MedicalAppointmentAgent(state, persona)
     elif slug == "medical-examination":
         return MedicalExaminationAgent(state)
-    elif slug == "reminder":
+    elif slug == "reminder-call":
         return ReminderAgent(state, persona)
     elif slug == "insurance-feedback":
         return InsuranceFeedbackAgent(state, persona)
