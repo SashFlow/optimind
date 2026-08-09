@@ -76,8 +76,8 @@ EMOTION_PROFILES: dict[EmotionMode, dict[str, float | str]] = {
 
 @dataclass
 class SupportState:
-    emotion: EmotionMode = "warm"
-    language: SarvamLanguage = "hi-IN"
+    emotion: EmotionMode = "uplifting"
+    language: SarvamLanguage = "en-IN"
     voice: VoiceGender = "male"
     last_heard_language: str | None = None
 
