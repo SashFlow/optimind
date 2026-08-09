@@ -4,7 +4,10 @@ from .feedback import INSURANCE_FEEDBACK_AGENT_PROMPT
 from .appointment import MAX_MEDICAL_APPOINTMENT_PROMPT, MEDICAL_APPOINTMENT_PROMPT
 
 SESSION_INSTRUCTIONS = """
-Open the conversation naturally by introducing yourself.
+Greet the customer warmly and naturally, like someone genuinely glad to help — not
+someone reading a script. Introduce yourself in one or two short, natural-sounding
+sentences and ease into the reason for the call. Let a little warmth come through in
+how you say it, not just what you say. Do not call any tools yet.
 """
 
 __all__ = [

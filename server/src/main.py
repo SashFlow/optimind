@@ -31,6 +31,7 @@ from livekit.agents.voice import (
     UserInputTranscribedEvent,
 )
 from utils.tools import transfer_to_human
+from utils.backchannel import ListeningBackchannel
 from utils.helper import (
     extract_dial_phone_number,
     normalize_tts_language,
@@ -216,7 +217,9 @@ async def entrypoint(ctx: JobContext):
             target_language_code=state.language,
             pace=float(EMOTION_PROFILES["warm"]["pace"]),
             temperature=float(EMOTION_PROFILES["warm"]["temperature"]),
-            speech_sample_rate=8000 if is_phone_call else 16000,
+            # Match console/test tuning — 8 kHz reads warmer on Sarvam bulbul:v3
+            # than 16 kHz web output (less stiff / metallic).
+            speech_sample_rate=8000,
         ),
         turn_handling=TurnHandlingOptions(
             turn_detection=inference.TurnDetector(),
@@ -283,21 +286,23 @@ async def entrypoint(ctx: JobContext):
         room=ctx.room,
         room_options=room_options,
     )
+    # Soft continuers while the user pauses mid-turn (cloud hook + pause fallback).
+    ListeningBackchannel(session).attach()
 
     # Egress Init
-    await egress.start_room_composite_egress(
-        start=RoomCompositeEgressRequest(
-            room_name=ctx.room.name,
-            audio_only=is_phone_call,
-            layout="grid",
-            preset=EncodingOptionsPreset.H264_720P_30,
-            file=EncodedFileOutput(
-                file_type=EncodedFileType.MP4,
-                filepath=f"{ctx.room.name}/recording-session.mp4",
-                s3=build_s3_upload(),
-            ),
-        )
-    )
+    # await egress.start_room_composite_egress(
+    #     start=RoomCompositeEgressRequest(
+    #         room_name=ctx.room.name,
+    #         audio_only=is_phone_call,
+    #         layout="grid",
+    #         preset=EncodingOptionsPreset.H264_720P_30,
+    #         file=EncodedFileOutput(
+    #             file_type=EncodedFileType.MP4,
+    #             filepath=f"{ctx.room.name}/recording-session.mp4",
+    #             s3=build_s3_upload(),
+    #         ),
+    #     )
+    # )
     background_audio = BackgroundAudioPlayer(
         # play keyboard typing sound when the agent is thinking
         thinking_sound=[
