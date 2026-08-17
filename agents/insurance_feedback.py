@@ -119,7 +119,7 @@ class InsuranceFeedbackAgent(ScenarioAgent):
             "next_action": self._step_guidance(),
         }
 
-    @function_tool()
+    @function_tool(on_duplicate="replace")
     async def submit_feedback(
         self,
         _context: RunContext,
@@ -164,7 +164,7 @@ class InsuranceFeedbackAgent(ScenarioAgent):
             ),
         }
 
-    @function_tool()
+    @function_tool(on_duplicate="reject")
     async def end_call(self, context: RunContext) -> str:
         """End the call after your final goodbye has been spoken.
 
@@ -172,19 +172,10 @@ class InsuranceFeedbackAgent(ScenarioAgent):
         same turn, then invoke this tool. After this tool returns, produce no further
         speech or tool calls.
         """
-        if self._end_call_invoked or getattr(
-            context.session, "_end_call_invoked", False
-        ):
-            logger.debug("end_call ignored — already invoked")
-            return "TERMINAL: Call already ended. Produce no further output."
-
-        self._end_call_invoked = True
-        context.session._end_call_invoked = True
-        logger.info("Insurance feedback call ending")
         context.session.shutdown()
         return "TERMINAL: Call ended. Produce no further output."
 
-    @function_tool()
+    @function_tool(on_duplicate="reject")
     async def schedule_callback(
         self, _context: RunContext, preferred_time: str = ""
     ) -> dict[str, Any]:

@@ -18,7 +18,7 @@ from livekit.protocol.egress import (
     EncodedFileType,
     S3Upload,
 )
-from livekit.plugins import anam, google, ai_coustics, sarvam
+from livekit.plugins import anam, google as google_plugin, ai_coustics, sarvam
 from livekit.agents.voice import AgentSession, UserStateChangedEvent
 from agents.common import extract_dial_phone_number, resolve_metadata_payload
 from agents.tools import transfer_to_human
@@ -181,26 +181,33 @@ async def entrypoint(ctx: JobContext):
                 output_audio_bitrate="128k",
                 output_audio_codec="mp3",
             ),
-            llm=google.LLM(model="gemini-2.5-flash"),
+            llm=google_plugin.LLM(model="gemini-2.5-flash"),
         )
     else:
         session = AgentSession(
-            llm=google.realtime.RealtimeModel(
+            llm=google_plugin.realtime.RealtimeModel(
                 model="gemini-3.1-flash-live-preview",
                 voice=agent["voice"],
                 tool_response_scheduling=FunctionResponseScheduling.WHEN_IDLE,
             ),
             tools=[transfer_to_human],
             preemptive_generation=False,
-            user_away_timeout=3,
+            user_away_timeout=10,
         )
+
+    away_strikes = 0
 
     @session.on("user_state_changed")
     def _on_user_state_changed(ev: UserStateChangedEvent):
+        nonlocal away_strikes
         if ev.new_state == "away":
-            session.generate_reply(
-                instructions="It seems you are away. I'll end the call now. Goodbye!"
-            )
+            away_strikes += 1
+            logger.info("user marked away (strike %s/2)", away_strikes)
+            if away_strikes >= 2:
+                logger.info("user away too long; ending session")
+                session.shutdown()
+            return
+        away_strikes = 0
 
     if use_avatar:
         participant = None

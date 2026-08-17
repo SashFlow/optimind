@@ -24,6 +24,8 @@ class ScenarioAgent(Agent):
         )
 
     async def on_exit(self) -> None:
+        if getattr(self.session, "_end_call_invoked", False):
+            return
         self.session.generate_reply(instructions="Thank you for your time. Goodbye!")
 
     async def clear_widgets(self) -> None:

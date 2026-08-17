@@ -9,7 +9,7 @@ from livekit.agents import (
     cli,
     room_io,
 )
-from livekit.plugins import google, ai_coustics
+from livekit.plugins import google as google_plugin, ai_coustics
 from livekit.agents.voice import AgentSession, UserStateChangedEvent
 from agents.tools import end_call
 from utils.helper import get_agent
@@ -75,7 +75,7 @@ async def entrypoint(ctx: JobContext):
 
     agent = AGENT_LIB[selected_agent]
     session = AgentSession(
-        llm=google.realtime.RealtimeModel(
+        llm=google_plugin.realtime.RealtimeModel(
             model="gemini-3.1-flash-live-preview",
             voice=agent["voice"],
             language=LANGUAGE_DICT[language],
@@ -84,15 +84,22 @@ async def entrypoint(ctx: JobContext):
         tools=[end_call],
         vad=ai_coustics.VAD(),
         preemptive_generation=True,
-        user_away_timeout=30,
+        user_away_timeout=20,
     )
+
+    away_strikes = 0
 
     @session.on("user_state_changed")
     def _on_user_state_changed(ev: UserStateChangedEvent):
+        nonlocal away_strikes
         if ev.new_state == "away":
-            session.generate_reply(
-                instructions="It seems you are away. I'll end the call now. Goodbye!"
-            )
+            away_strikes += 1
+            logger.info("user marked away (strike %s/2)", away_strikes)
+            if away_strikes >= 2:
+                logger.info("user away too long; ending session")
+                session.shutdown()
+            return
+        away_strikes = 0
 
     await session.start(
         agent=get_agent(slug, selected_agent, agent, language, persona),

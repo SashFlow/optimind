@@ -106,10 +106,14 @@ try:
                         _logger.debug("interrupt before retry failed", exc_info=True)
 
                 _end_user_activity_if_needed(self)
+                preview = text.replace("\n", " ").strip()
+                if len(preview) > 80:
+                    preview = preview[:77] + "..."
                 _logger.info(
-                    "gemini-3.1 generate_reply attempt %s/%s",
+                    "gemini-3.1 generate_reply attempt %s/%s trigger=%r",
                     attempt,
                     _MAX_ATTEMPTS,
+                    preview,
                 )
                 _send_trigger_text(self, text)
 
